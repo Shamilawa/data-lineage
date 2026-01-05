@@ -3,14 +3,16 @@ import { Handle, Position, NodeProps } from "reactflow";
 import { BrainCircuit } from "lucide-react";
 import clsx from "clsx";
 import { LLMNodeData } from "@/types/lineage";
+import { getNodeStatusStyles } from "@/utils/node-styling";
 
 const LLMNode = ({ data, selected }: NodeProps<LLMNodeData>) => {
     return (
         <div className="relative group">
             <div
                 className={clsx(
-                    "w-[280px] bg-white border-2 border-cyan-200 rounded-md shadow-sm transition-all duration-200",
-                    "hover:shadow-md hover:border-cyan-400"
+                    "w-[280px]",
+                    getNodeStatusStyles(data.status),
+                    selected && "ring-2 ring-offset-1 ring-cyan-500"
                 )}
             >
                 {/* Header */}
@@ -20,7 +22,7 @@ const LLMNode = ({ data, selected }: NodeProps<LLMNodeData>) => {
                     </div>
                     <div className="flex-grow min-w-0">
                         <div className="flex items-center justify-between mb-1">
-                            <h3 className="text-sm font-semibold text-slate-900 truncate">
+                            <h3 className="text-sm font-semibold opacity-90 truncate">
                                 {data.label}
                             </h3>
                         </div>

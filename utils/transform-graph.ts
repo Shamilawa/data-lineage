@@ -7,358 +7,670 @@ export function transformGraph(rawGraph: any): {
     nodes: LineageNode[];
     edges: LineageEdge[];
 } {
-    const nodes: LineageNode[] = [];
-    const edges: LineageEdge[] = [];
+    // --- Hardcoded Flight Booking Workflow ---
+    // User -> Planner -> Search -> Booking -> Email -> End
 
-    let stepCounter = 1;
+    // 1. Nodes
 
-    // Layout Scale Factors to prevent overlap
-    const SCALE_X = 2.0;
-    const SCALE_Y = 2.5;
-
-    // 1. First Pass: Identify Shared LLMs and calculate their ideal position
-    const llmMap = new Map<
-        string,
+    // Groups (Infrastructure Layer)
+    const groups: LineageNode[] = [
         {
-            data: any;
-            connectedAgentPositions: { x: number; y: number }[];
-        }
-    >();
+            id: "group-agent_tool",
+            type: "group",
+            position: { x: 350, y: 100 },
+            style: {
+                width: 900,
+                height: 250,
+                zIndex: -1,
+                border: "none",
+                backgroundColor: "transparent",
+            },
+            data: { label: "Agents", color: "#3b82f6" },
+            draggable: false,
+            selected: false,
+        },
+        {
+            id: "group-node_tool",
+            type: "group",
+            position: { x: 350, y: 450 },
+            style: {
+                width: 900,
+                height: 200,
+                zIndex: -1,
+                border: "none",
+                backgroundColor: "transparent",
+            },
+            data: { label: "Tools", color: "#64748b" },
+            draggable: false,
+            selected: false,
+        },
+        {
+            id: "group-llm_tool",
+            type: "group",
+            position: { x: 350, y: 750 },
+            style: {
+                width: 900,
+                height: 200,
+                zIndex: -1,
+                border: "none",
+                backgroundColor: "transparent",
+            },
+            data: { label: "Intelligence Sources", color: "#0e7490" },
+            draggable: false,
+            selected: false,
+        },
+    ];
 
-    rawGraph.nodes.forEach((rawNode: any) => {
-        if (rawNode.type === "agent_node" && rawNode.data.languageModal) {
-            const llm = rawNode.data.languageModal;
-            // Group primarily by modelName to handle inconsistent IDs in raw data
-            const modelKey = llm.modelName || llm.modelId || "default-model";
-
-            if (!llmMap.has(modelKey)) {
-                llmMap.set(modelKey, {
-                    data: llm,
-                    connectedAgentPositions: [],
-                });
-            }
-
-            llmMap.get(modelKey)?.connectedAgentPositions.push({
-                x: rawNode.position.x * SCALE_X,
-                y: rawNode.position.y * SCALE_Y,
-            });
-        }
-    });
-
-    // 2. Create Shared LLM Nodes (Infrastructure Layer)
-    llmMap.forEach((info, modelKey) => {
-        const sumX = info.connectedAgentPositions.reduce(
-            (sum, pos) => sum + pos.x,
-            0
-        );
-        const avgX = sumX / info.connectedAgentPositions.length;
-
-        const sumY = info.connectedAgentPositions.reduce(
-            (sum, pos) => sum + pos.y,
-            0
-        );
-        const avgY = sumY / info.connectedAgentPositions.length;
-        const layoutY = avgY + 700; // Deep layer below Tools
-
-        nodes.push({
-            id: `llm-${modelKey}`,
-            type: "llm",
-            position: { x: avgX, y: layoutY },
+    const nodes: LineageNode[] = [
+        // --- Start Node (User) ---
+        {
+            id: "start-1",
+            type: "start",
+            position: { x: 50, y: 180 },
             data: {
-                model: info.data.modelName || "Brain",
-                provider: info.data.provider,
+                label: "User Request",
+                status: "success",
+                description:
+                    "Initiates the workflow with the user's initial travel query.",
+            },
+        },
+
+        // --- Agents (Row 1, Y=180) --
+
+        // Planner Agent
+        {
+            id: "agent-planner",
+            type: "agent",
+            parentId: "group-agent_tool",
+            extent: "parent",
+            position: { x: 50, y: 80 },
+            data: {
+                label: "Planner Agent",
+                agentType: "Worker",
+                status: "success",
+                description:
+                    "Analyzes user requests to determine travel intent and orchestrates the necessary tools for flight discovery.",
+                inputs: {
+                    source: "User Chat",
+                    content: "Book flight to NYC next Friday...",
+                    context: { userId: "u_77812", premium: true },
+                },
+                outputs: {
+                    action: "Search Flights",
+                    reasoning:
+                        "User requested flight to NYC for specific date. Prioritizing Delta due to user history.",
+                    params: {
+                        originLocationCode: "SFO",
+                        destinationLocationCode: "JFK",
+                        departureDate: "2026-01-12",
+                        carriers: ["DL"],
+                        maxPrice: 400,
+                    },
+                },
+                category: "agent_tool",
+                duration: "1.2s",
+            },
+        },
+
+        // Booking Agent
+        {
+            id: "agent-booking",
+            type: "agent",
+            parentId: "group-agent_tool",
+            extent: "parent",
+            position: { x: 550, y: 80 },
+            data: {
+                label: "Booking Agent",
+                agentType: "Worker",
+                status: "success",
+                description:
+                    "Finalizes the reservation by selecting the best flight, generating a PNR, and initiating the confirmation process.",
+                inputs: {
+                    searchResults: [
+                        {
+                            id: "offer_1",
+                            airline: "DL",
+                            price: "350.50",
+                            segments: [
+                                { dept: "SFO", arr: "JFK", time: "08:00" },
+                            ],
+                        },
+                        {
+                            id: "offer_2",
+                            airline: "UA",
+                            price: "410.00",
+                            segments: [
+                                { dept: "SFO", arr: "EWR", time: "09:00" },
+                            ],
+                        },
+                    ],
+                    policy: { max_price: 400, preferred_carrier: "DL" },
+                },
+                outputs: {
+                    bookingId: "CONF-9921",
+                    pnr: "H7KL2M",
+                    flightId: "DL114",
+                    status: "Confirmed",
+                    totalCharged: { amount: 350.5, currency: "USD" },
+                    ticketUrl: "https://fly.delta.com/t/H7KL2M",
+                },
+                category: "agent_tool",
+                duration: "1.5s",
+            },
+        },
+
+        // --- Tools (Row 2, Y=500) ---
+
+        // Search Tool (Below Planner)
+        {
+            id: "tool-search",
+            type: "tool",
+            parentId: "group-node_tool",
+            extent: "parent",
+            position: { x: 50, y: 50 },
+            data: {
+                label: "Flight Search Tool",
+                toolName: "amadeus_flight_search",
+                description:
+                    "Connects to global distribution systems (GDS) via Amadeus API to retrieve real-time flight availability and pricing.",
+                inputs: {
+                    origin: "SFO",
+                    destination: "JFK",
+                    date: "2026-01-12",
+                    adults: 1,
+                    currencyCode: "USD",
+                },
+                outputs: {
+                    meta: {
+                        count: 2,
+                        links: {
+                            self: "https://test.api.amadeus.com/v2/shopping/flight-offers",
+                        },
+                    },
+                    data: [
+                        {
+                            type: "flight-offer",
+                            id: "offer_1",
+                            source: "GDS",
+                            itineraries: [
+                                {
+                                    duration: "PT5H30M",
+                                    segments: [
+                                        {
+                                            departure: {
+                                                iataCode: "SFO",
+                                                at: "2026-01-12T08:00:00",
+                                            },
+                                            arrival: {
+                                                iataCode: "JFK",
+                                                terminal: "4",
+                                                at: "2026-01-12T16:30:00",
+                                            },
+                                            carrierCode: "DL",
+                                            number: "114",
+                                            aircraft: { code: "321" },
+                                        },
+                                    ],
+                                },
+                            ],
+                            price: {
+                                currency: "USD",
+                                total: "350.50",
+                                base: "300.00",
+                            },
+                        },
+                        {
+                            type: "flight-offer",
+                            id: "offer_2",
+                            source: "GDS",
+                            itineraries: [
+                                {
+                                    duration: "PT6H00M",
+                                    segments: [
+                                        {
+                                            departure: {
+                                                iataCode: "SFO",
+                                                at: "2026-01-12T09:00:00",
+                                            },
+                                            arrival: {
+                                                iataCode: "EWR",
+                                                terminal: "C",
+                                                at: "2026-01-12T17:00:00",
+                                            },
+                                            carrierCode: "UA",
+                                            number: "442",
+                                            aircraft: { code: "738" },
+                                        },
+                                    ],
+                                },
+                            ],
+                            price: {
+                                currency: "USD",
+                                total: "410.00",
+                                base: "350.00",
+                            },
+                        },
+                    ],
+                },
+                category: "node_tool",
+            },
+        },
+
+        // Email Tool (Below Booking)
+        {
+            id: "tool-email",
+            type: "tool",
+            parentId: "group-node_tool",
+            extent: "parent",
+            position: { x: 550, y: 50 },
+            data: {
+                label: "Email Tool",
+                toolName: "SendGridV3",
+                description:
+                    "Sends transactional emails to users for confirmations, updates, or notifications.",
+                inputs: {
+                    personalizations: [{ to: [{ email: "user@example.com" }] }],
+                    from: {
+                        email: "bookings@travel-bot.com",
+                        name: "Travel Bot",
+                    },
+                    subject:
+                        "Start Packing! Your flight DL114 to JFK is confirmed.",
+                    content: [
+                        {
+                            type: "text/html",
+                            value: "<h1>Booking Confirmed</h1><p>PNR: H7KL2M</p>...",
+                        },
+                    ],
+                },
+                outputs: {
+                    statusCode: 202,
+                    headers: {
+                        "x-message-id": "Za8_9Bp_S-K92",
+                        server: "nginx",
+                    },
+                    body: "",
+                },
+                category: "node_tool",
+            },
+        },
+
+        // --- LLM (Row 3, Y=800) ---
+        {
+            id: "llm-shared",
+            type: "llm",
+            parentId: "group-llm_tool",
+            extent: "parent",
+            position: { x: 300, y: 50 },
+            data: {
+                model: "gpt-4-turbo-preview",
+                provider: "OpenAI",
                 label: "Shared Brain",
+                description:
+                    "A centralized Large Language Model (GPT-4) that provides reasoning and decision-making capabilities to all agents in the workflow.",
                 status: "success",
                 category: "llm_tool",
-            },
-        });
-    });
-
-    // 3. Third Pass: Traversal-based Node & Edge Generation
-
-    // Build maps for traversal
-    const adjacencyMap = new Map<string, string[]>();
-    rawGraph.edges.forEach((e: any) => {
-        if (!adjacencyMap.has(e.source)) adjacencyMap.set(e.source, []);
-        adjacencyMap.get(e.source)?.push(e.target);
-    });
-
-    const nodeMap = new Map<string, any>();
-    rawGraph.nodes.forEach((n: any) => nodeMap.set(n.id, n));
-
-    // Queue for BFS/Traversal
-    const queue: string[] = [];
-
-    // Find Start Node(s)
-    rawGraph.nodes.forEach((n: any) => {
-        if (n.type === "start_node") queue.push(n.id);
-    });
-
-    const visited = new Set<string>();
-
-    while (queue.length > 0) {
-        const nodeId = queue.shift()!;
-        if (visited.has(nodeId)) continue;
-        visited.add(nodeId);
-
-        const rawNode = nodeMap.get(nodeId);
-        if (!rawNode) continue;
-
-        // Calculate degree (outgoing edges) to apply dynamic spacing
-        const outgoingEdges = adjacencyMap.get(nodeId)?.length || 0;
-
-        // Base scale
-        let scaledX = rawNode.position.x * SCALE_X;
-
-        // Dynamic Spacing: If node has multiple outgoing connections (hub),
-        // give it extra horizontal space to let edges breathe.
-        if (outgoingEdges > 1) {
-            scaledX += 80; // Push it further right
-        }
-
-        const scaledY = rawNode.position.y * SCALE_Y;
-
-        // --- Create Main Node ---
-        if (rawNode.type === "start_node") {
-            nodes.push({
-                id: rawNode.id,
-                type: "start",
-                position: { x: scaledX, y: scaledY },
-                data: { label: rawNode.data.label, status: "success" },
-            });
-        } else if (rawNode.type === "end_node") {
-            nodes.push({
-                id: rawNode.id,
-                type: "end",
-                position: { x: scaledX, y: scaledY },
-                data: { label: rawNode.data.label },
-            });
-        } else if (rawNode.type === "agent_node") {
-            nodes.push({
-                id: nodeId,
-                type: "agent",
-                position: { x: scaledX, y: scaledY },
-                data: {
-                    label: rawNode.data.name,
-                    agentType: "Worker",
-                    status: "success",
-                    inputs: { description: rawNode.data.description },
-                    outputs: { result: "Task Completed" },
-                    category: "agent_tool",
-                },
-            });
-
-            // -- Extract Sub-entities & Internal Edges --
-            // const promptData = rawNode.data.prompt; // Removed promptData usage
-            const llmData = rawNode.data.languageModal;
-
-            // 1. Helper Nodes: Tools & Shared LLM (Placed BELOW Agent)
-            // Increased vertical spacing to 400px
-            const helperY = scaledY + 400;
-
-            // Internal Flow: Agent -> LLM -> Agent
-            if (llmData) {
-                const modelKey =
-                    llmData.modelName || llmData.modelId || "default-model";
-                const llmNodeId = `llm-${modelKey}`;
-
-                // 1. Agent -> Shared LLM
-                edges.push({
-                    id: `edge-${nodeId}-${llmNodeId}`,
-                    source: nodeId,
-                    target: llmNodeId,
-                    sourceHandle: "bottom",
-                    targetHandle: "top",
-                    type: "sequence",
-                    animated: true,
-                    style: { stroke: "#0e7490" },
-                    data: { stepNumber: stepCounter++ },
-                });
-
-                // 2. Shared LLM -> Agent
-                edges.push({
-                    id: `edge-${llmNodeId}-${nodeId}`,
-                    source: llmNodeId,
-                    target: nodeId,
-                    sourceHandle: "top-out",
-                    targetHandle: "bottom",
-                    type: "sequence",
-                    animated: true,
-                    style: { stroke: "#0e7490" },
-                    data: { stepNumber: stepCounter++ },
-                });
-            }
-
-            // Internal Flow: Agent -> Tools -> Agent
-            const tools = rawNode.data.matchTools;
-            if (tools && Array.isArray(tools)) {
-                tools.forEach((tool: any, index: number) => {
-                    const toolId = generateId("tool", `${nodeId}-${index}`);
-
-                    // Horizontal Spacing for Tools
-                    // Distribute symmetrically around the agent's center
-                    const TOOL_SPACING = 250;
-                    const offsetX =
-                        (index - (tools.length - 1) / 2) * TOOL_SPACING;
-                    const toolX = scaledX + offsetX;
-
-                    nodes.push({
-                        id: toolId,
-                        type: "tool",
-                        position: { x: toolX, y: helperY },
-                        data: {
-                            label: "Tool",
-                            toolName: tool.toolName,
-                            description: tool.description,
-                            inputs: tool.usage,
-                            outputs: tool.output,
-                            category: "node_tool",
+                history: [
+                    {
+                        requestStep: 1,
+                        responseStep: 2,
+                        source: "Planner Agent",
+                        prompt: {
+                            model: "gpt-4-turbo-preview",
+                            messages: [
+                                {
+                                    role: "system",
+                                    content:
+                                        "You are a travel planner. Extract constraints.",
+                                },
+                                {
+                                    role: "user",
+                                    content:
+                                        "Book flight to NYC next Friday for < $400, prefer Delta.",
+                                },
+                            ],
                         },
-                    });
-
-                    // 3. Agent -> Tool
-                    edges.push({
-                        id: `edge-${nodeId}-${toolId}`,
-                        source: nodeId,
-                        target: toolId,
-                        sourceHandle: "bottom",
-                        targetHandle: "top",
-                        type: "sequence",
-                        animated: true,
-                        style: { stroke: "#3b82f6" },
-                        data: { stepNumber: stepCounter++ },
-                    });
-
-                    // 4. Tool -> Agent (Return)
-                    edges.push({
-                        id: `edge-${toolId}-${nodeId}`,
-                        source: toolId,
-                        target: nodeId,
-                        sourceHandle: "top-out",
-                        targetHandle: "bottom",
-                        type: "sequence",
-                        animated: true,
-                        style: { stroke: "#3b82f6" },
-                        data: { stepNumber: stepCounter++ },
-                    });
-                });
-            }
-        }
-
-        // --- Process Outgoing Edges ---
-        // Find ALL outgoing edges from this node in the raw graph
-        // And traverse them
-        const targets = adjacencyMap.get(nodeId);
-        if (targets) {
-            targets.sort(); // Sort targets to have deterministic order if multiple
-            targets.forEach((targetId) => {
-                // Look up the raw edge to find its specific properties if any
-                // Also ensure valid target
-                if (nodeMap.get(targetId)) {
-                    // Add Main Sequence Edge
-                    const rawEdge = rawGraph.edges.find(
-                        (e: any) => e.source === nodeId && e.target === targetId
-                    );
-                    const edgeId = rawEdge
-                        ? rawEdge.id
-                        : `edge-${nodeId}-${targetId}`;
-
-                    edges.push({
-                        id: edgeId,
-                        source: nodeId,
-                        target: targetId,
-                        sourceHandle: "right",
-                        targetHandle: "left",
-                        type: "sequence",
-                        animated: true,
-                        data: { stepNumber: stepCounter++ },
-                        style: { stroke: "#94a3b8" },
-                    });
-
-                    // Add to queue for next iteration
-                    queue.push(targetId);
-                }
-            });
-        }
-    }
-
-    // 4. Final Pass: Create Group/Layer Nodes
-    const groups: LineageNode[] = [];
-
-    // Helper to calculate bounds
-    const createGroup = (catId: string, label: string, color: string) => {
-        const catNodes = nodes.filter((n) => n.data.category === catId);
-        if (catNodes.length === 0) return;
-
-        const minX = Math.min(...catNodes.map((n) => n.position.x));
-        const maxX = Math.max(
-            ...catNodes.map((n) => {
-                // Safety widths based on component styling
-                const width =
-                    catId === "agent_tool" || catId === "llm_tool" ? 320 : 260; // Agents/LLMs are wider (~280px)
-                return n.position.x + width;
-            })
-        );
-        const minY = Math.min(...catNodes.map((n) => n.position.y));
-        const maxY = Math.max(
-            ...catNodes.map((n) => {
-                const height = catId === "agent_tool" ? 180 : 120; // Agents are taller
-                return n.position.y + height;
-            })
-        );
-
-        const padding = 40; // Tightened padding as requested
-
-        groups.push({
-            id: `group-${catId}`,
-            type: "group",
-            position: { x: minX - padding, y: minY - padding },
-            style: {
-                width: maxX - minX + padding * 2,
-                height: maxY - minY + padding * 2,
-                zIndex: -1,
-                border: "none", // Prevent default React Flow border
-                backgroundColor: "transparent", // Prevent default background
+                        response: {
+                            id: "chatcmpl-8x92...",
+                            object: "chat.completion",
+                            created: 1709428202,
+                            model: "gpt-4-turbo-preview",
+                            choices: [
+                                {
+                                    index: 0,
+                                    message: {
+                                        role: "assistant",
+                                        content:
+                                            '{\n  "intent": "book_flight",\n  "destination": "NYC",\n  "date": "2026-01-12",\n  "budget": 400,\n  "airline_pref": "Delta"\n}',
+                                    },
+                                    finish_reason: "stop",
+                                },
+                            ],
+                            usage: {
+                                prompt_tokens: 45,
+                                completion_tokens: 38,
+                                total_tokens: 83,
+                            },
+                        },
+                    },
+                    {
+                        requestStep: 3,
+                        responseStep: 4,
+                        source: "Booking Agent",
+                        prompt: {
+                            model: "gpt-4-turbo-preview",
+                            messages: [
+                                {
+                                    role: "system",
+                                    content:
+                                        "Select the best flight offer based on constraints.",
+                                },
+                                {
+                                    role: "user",
+                                    content:
+                                        "Constraints: <$400, Delta.\nOffers: [ {id: 'offer_1', price: 350.50, airline: 'DL'}, {id: 'offer_2', price: 410.00, airline: 'UA'} ]",
+                                },
+                            ],
+                        },
+                        response: {
+                            id: "chatcmpl-8x93...",
+                            object: "chat.completion",
+                            choices: [
+                                {
+                                    index: 0,
+                                    message: {
+                                        role: "assistant",
+                                        content:
+                                            '{\n  "selected_offer_id": "offer_1",\n  "reasoning": "Offer 1 is Delta (DL) and $350.50, which is under the $400 limit. Offer 2 is over budget."\n}',
+                                    },
+                                    finish_reason: "stop",
+                                },
+                            ],
+                            usage: {
+                                prompt_tokens: 120,
+                                completion_tokens: 45,
+                                total_tokens: 165,
+                            },
+                        },
+                    },
+                ],
             },
+        },
+
+        // --- End Node ---
+        {
+            id: "end-1",
+            type: "end",
+            position: { x: 1300, y: 180 },
             data: {
-                label: label,
-                color: color,
+                label: "Workflow Complete",
+                status: "success",
+                description:
+                    "Indicates the successful completion of the flight booking workflow.",
             },
-            draggable: false,
-            selectable: false,
-        });
-    };
+        },
+    ];
 
-    createGroup("agent_tool", "Agents", "#3b82f6"); // Blue
-    createGroup("node_tool", "Tools", "#64748b"); // Slate
-    createGroup("llm_tool", "Intelligence Sources", "#0e7490"); // Cyan (Enterprise)
-
-    // 5. Post-Process: Assign Parent/Child Relationships
-    // This locks the nodes into their groups
-    const groupMap = new Map(groups.map((g) => [g.id, g]));
-
-    nodes.forEach((node) => {
-        if (node.data.category) {
-            const groupId = `group-${node.data.category}`;
-            const group = groupMap.get(groupId);
-
-            if (group) {
-                // Set Parent
-                node.parentId = groupId;
-                // Restrict movement to within parent
-                node.extent = "parent";
-
-                // Convert Absolute Position to Relative Position
-                node.position = {
-                    x: node.position.x - group.position.x,
-                    y: node.position.y - group.position.y,
-                };
-            }
-        }
-    });
-
-    // Parent nodes must come before child nodes in the array
     const finalNodes = [...groups, ...nodes];
+
+    // 2. Edges
+    const edges: LineageEdge[] = [
+        // Start -> Planner
+        {
+            id: "e-start-planner",
+            source: "start-1",
+            target: "agent-planner",
+            sourceHandle: "right",
+            targetHandle: "left",
+            type: "sequence",
+            animated: true,
+            style: { stroke: "#94a3b8" },
+            data: {
+                stepNumber: 1,
+                payload: {
+                    from: "User",
+                    to: "Planner",
+                    data: {
+                        message:
+                            "I need to fly to NYC for a conference next Friday (Jan 12th). Please book the Delta flight if it's under $400.",
+                    },
+                },
+            },
+        },
+
+        // --- Planner Agent Interactions ---
+
+        // Planner -> LLM (Request)
+        {
+            id: "e-planner-llm",
+            source: "agent-planner",
+            target: "llm-shared",
+            sourceHandle: "bottom",
+            targetHandle: "top",
+            type: "sequence",
+            animated: true,
+            style: { stroke: "#0e7490" },
+            data: {
+                stepNumber: 2,
+                payload: {
+                    request: {
+                        messages: [
+                            {
+                                role: "system",
+                                content: "You are a travel planner...",
+                            },
+                            { role: "user", content: "Book flight to NYC..." },
+                        ],
+                    },
+                },
+            },
+        },
+        // LLM -> Planner (Response)
+        {
+            id: "e-llm-planner",
+            source: "llm-shared",
+            target: "agent-planner",
+            sourceHandle: "top-out",
+            targetHandle: "bottom",
+            type: "sequence",
+            animated: true,
+            style: { stroke: "#0e7490" },
+            data: {
+                stepNumber: 3,
+                payload: {
+                    response: {
+                        content:
+                            '{ "intent": "book_flight", "destination": "NYC", ... }',
+                        usage: { total_tokens: 83 },
+                    },
+                },
+            },
+        },
+
+        // Planner -> Search Tool (Request)
+        {
+            id: "e-planner-search",
+            source: "agent-planner",
+            target: "tool-search",
+            sourceHandle: "bottom",
+            targetHandle: "top",
+            type: "sequence",
+            animated: true,
+            style: { stroke: "#3b82f6" },
+            data: {
+                stepNumber: 4,
+                payload: {
+                    api: "GET /v2/shopping/flight-offers",
+                    params: { origin: "SFO", dest: "JFK", date: "2026-01-12" },
+                },
+            },
+        },
+        // Search Tool -> Planner (Response)
+        {
+            id: "e-search-planner",
+            source: "tool-search",
+            target: "agent-planner",
+            sourceHandle: "top-out",
+            targetHandle: "bottom",
+            type: "sequence",
+            animated: true,
+            style: { stroke: "#3b82f6" },
+            data: {
+                stepNumber: 5,
+                payload: {
+                    status: 200,
+                    body: {
+                        data: [
+                            {
+                                id: "offer_1",
+                                price: { total: "350.50" },
+                                carrier: "DL",
+                            },
+                            {
+                                id: "offer_2",
+                                price: { total: "410.00" },
+                                carrier: "UA",
+                            },
+                        ],
+                    },
+                },
+            },
+        },
+
+        // Planner -> Booking (Handoff)
+        {
+            id: "e-planner-booking",
+            source: "agent-planner",
+            target: "agent-booking",
+            sourceHandle: "right",
+            targetHandle: "left",
+            type: "sequence",
+            animated: true,
+            style: { stroke: "#94a3b8" },
+            data: {
+                stepNumber: 6,
+                payload: {
+                    from: "Planner",
+                    to: "Booking",
+                    data: {
+                        task: "finalize_booking",
+                        candidateOffers: ["offer_1", "offer_2"],
+                        constraints: { max_price: 400, airline: "DL" },
+                    },
+                },
+            },
+        },
+
+        // --- Booking Agent Interactions ---
+
+        // Booking -> LLM (Request)
+        {
+            id: "e-booking-llm",
+            source: "agent-booking",
+            target: "llm-shared",
+            sourceHandle: "bottom",
+            targetHandle: "top",
+            type: "sequence",
+            animated: true,
+            style: { stroke: "#0e7490" },
+            data: {
+                stepNumber: 7,
+                payload: {
+                    request: {
+                        messages: [
+                            { role: "system", content: "Select best offer..." },
+                            { role: "user", content: "Constraints: <$400..." },
+                        ],
+                    },
+                },
+            },
+        },
+        // LLM -> Booking (Response)
+        {
+            id: "e-llm-booking",
+            source: "llm-shared",
+            target: "agent-booking",
+            sourceHandle: "top-out",
+            targetHandle: "bottom",
+            type: "sequence",
+            animated: true,
+            style: { stroke: "#0e7490" },
+            data: {
+                stepNumber: 8,
+                payload: {
+                    response: {
+                        content:
+                            '{ "selected_offer_id": "offer_1", "reasoning": "..." }',
+                        usage: { total_tokens: 165 },
+                    },
+                },
+            },
+        },
+
+        // Booking -> Email Tool (Request)
+        {
+            id: "e-booking-email",
+            source: "agent-booking",
+            target: "tool-email",
+            sourceHandle: "bottom",
+            targetHandle: "top",
+            type: "sequence",
+            animated: true,
+            style: { stroke: "#3b82f6" },
+            data: {
+                stepNumber: 9,
+                payload: {
+                    api: "POST /v3/mail/send",
+                    body: {
+                        to: "user@example.com",
+                        subject: "Confirmed: DL114",
+                    },
+                },
+            },
+        },
+        // Email Tool -> Booking (Response)
+        {
+            id: "e-email-booking",
+            source: "tool-email",
+            target: "agent-booking",
+            sourceHandle: "top-out",
+            targetHandle: "bottom",
+            type: "sequence",
+            animated: true,
+            style: { stroke: "#3b82f6" },
+            data: {
+                stepNumber: 10,
+                payload: {
+                    status: 202,
+                    message: "Accepted",
+                },
+            },
+        },
+
+        // Booking -> End
+        {
+            id: "e-booking-end",
+            source: "agent-booking",
+            target: "end-1",
+            sourceHandle: "right",
+            targetHandle: "left",
+            type: "sequence",
+            animated: true,
+            style: { stroke: "#94a3b8" },
+            data: {
+                stepNumber: 11,
+                payload: {
+                    status: "Success",
+                    result: {
+                        bookingReference: "H7KL2M",
+                        ticketNumber: "0062349112",
+                        flight: "DL114",
+                        total: "350.50 USD",
+                    },
+                },
+            },
+        },
+    ];
 
     return { nodes: finalNodes, edges };
 }

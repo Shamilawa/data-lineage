@@ -10,11 +10,12 @@ export type LineageNodeType =
 
 export interface BaseNodeData {
     label: string;
+    description?: string;
     inputs?: Record<string, any>;
     outputs?: Record<string, any>;
     timestamp?: string;
     duration?: string;
-    status?: "active" | "success" | "failure" | "idle";
+    status?: "active" | "success" | "failure" | "idle" | "skipped";
     category?: string;
     color?: string;
 }
@@ -28,6 +29,13 @@ export interface LLMNodeData extends BaseNodeData {
     provider?: string;
     tokens?: number;
     cost?: number;
+    history?: Array<{
+        requestStep: number;
+        responseStep: number;
+        source: string;
+        prompt: any;
+        response: any;
+    }>;
 }
 
 export interface PromptNodeData extends BaseNodeData {
@@ -46,6 +54,7 @@ export type LineageNode = Node<
 
 export interface SequenceEdgeData {
     stepNumber: number;
+    payload?: any;
 }
 
 export type LineageEdge = Edge<SequenceEdgeData>;

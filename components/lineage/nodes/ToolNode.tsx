@@ -3,6 +3,7 @@ import { Handle, Position, NodeProps } from "reactflow";
 import { Wrench, Database, Server } from "lucide-react";
 import clsx from "clsx";
 import { ToolNodeData } from "@/types/lineage";
+import { getNodeStatusStyles } from "@/utils/node-styling";
 
 const ToolNode = ({ data, selected }: NodeProps<ToolNodeData>) => {
     // Select icon based on tool name or defaults
@@ -19,11 +20,9 @@ const ToolNode = ({ data, selected }: NodeProps<ToolNodeData>) => {
         <div className="relative group">
             <div
                 className={clsx(
-                    "min-w-[200px] max-w-[240px] bg-white border border-slate-200 rounded-md shadow-sm transition-all duration-200",
-                    "hover:shadow-md hover:border-slate-400",
-                    selected
-                        ? "border-blue-500 shadow-md ring-2 ring-blue-100"
-                        : "border-slate-200 hover:border-blue-300"
+                    "min-w-[200px] max-w-[240px]",
+                    getNodeStatusStyles(data.status),
+                    selected && "ring-2 ring-offset-1 ring-blue-500"
                 )}
             >
                 {/* Header */}
@@ -32,10 +31,10 @@ const ToolNode = ({ data, selected }: NodeProps<ToolNodeData>) => {
                         {getIcon()}
                     </div>
                     <div>
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
+                        <div className="text-[10px] font-bold opacity-60 uppercase tracking-wider mb-0.5">
                             TOOL
                         </div>
-                        <div className="text-xs font-semibold text-slate-900 truncate">
+                        <div className="text-xs font-semibold opacity-90 truncate">
                             {data.toolName}
                         </div>
                     </div>

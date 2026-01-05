@@ -7,7 +7,7 @@ interface GroupNodeData {
     color?: string; // Hex color
 }
 
-const GroupNode = ({ data, style }: NodeProps<GroupNodeData>) => {
+const GroupNode = ({ data }: NodeProps<GroupNodeData>) => {
     // We expect 'style' to contain width/height from React Flow
     // We expect 'data.color' to be the base color.
 
