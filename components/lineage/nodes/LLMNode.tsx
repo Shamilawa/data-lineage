@@ -6,53 +6,50 @@ import { LLMNodeData } from "@/types/lineage";
 
 const LLMNode = ({ data, selected }: NodeProps<LLMNodeData>) => {
     return (
-        <div
-            className={clsx(
-                "relative min-w-[200px] bg-white rounded-lg transition-all duration-200",
-                "border px-3 py-3",
-                selected
-                    ? "border-purple-500 shadow-md ring-1 ring-purple-500"
-                    : "border-slate-200 shadow-sm hover:border-slate-300 hover:shadow-md"
-            )}
-        >
-            <div className="flex items-center gap-3 mb-2">
-                <div className="bg-purple-50 p-1.5 rounded-md border border-purple-100">
-                    <BrainCircuit className="w-4 h-4 text-purple-600" />
-                </div>
-                <div>
-                    <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">
-                        LLM Resource
+        <div className="relative group">
+            <div
+                className={clsx(
+                    "w-[280px] bg-white border-2 border-cyan-200 rounded-md shadow-sm transition-all duration-200",
+                    "hover:shadow-md hover:border-cyan-400"
+                )}
+            >
+                {/* Header */}
+                <div className="p-4 flex items-start gap-3">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-md bg-cyan-50 flex items-center justify-center border border-cyan-100">
+                        <BrainCircuit className="w-5 h-5 text-cyan-700" />
                     </div>
-                    <div className="text-xs font-semibold text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-100 inline-block mt-0.5">
-                        {data.model}
+                    <div className="flex-grow min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                            <h3 className="text-sm font-semibold text-slate-900 truncate">
+                                {data.label}
+                            </h3>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-cyan-100 text-cyan-800 border border-cyan-200">
+                                {data.model}
+                            </span>
+                        </div>
                     </div>
                 </div>
+
+                {/* Handles - Standard Sequence Only */}
+                {/* Target (Top) - Orthogonal Input */}
+                <Handle
+                    id="top"
+                    type="target"
+                    position={Position.Top}
+                    className="!w-2 !h-2 !bg-cyan-500 !border-white !border-2 -mt-[1px]"
+                />
+
+                {/* Source (Top) - Orthogonal Output (Offset) */}
+                <Handle
+                    id="top-out"
+                    type="source"
+                    position={Position.Top}
+                    className="!w-2 !h-2 !border-white !border-2 -mt-[1px]"
+                    style={{ left: "75%", background: "#0e7490" }} // Cyan-700
+                />
             </div>
-
-            <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono pt-2 border-t border-slate-50 mt-2">
-                {data.tokens && <span>Tokens: {data.tokens}</span>}
-                {data.cost && <span>Cost: ${data.cost}</span>}
-            </div>
-
-            {/* Handles */}
-
-            {/* Input from Agent */}
-            <Handle
-                type="target"
-                position={Position.Top}
-                id="top"
-                className="!w-2 !h-2 !bg-purple-400 !border-white !border-2"
-                style={{ left: "40%" }}
-            />
-
-            {/* Output to Agent */}
-            <Handle
-                type="source"
-                position={Position.Top}
-                id="top-out"
-                className="!w-2 !h-2 !bg-purple-400 !border-white !border-2"
-                style={{ left: "60%" }}
-            />
         </div>
     );
 };

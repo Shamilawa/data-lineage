@@ -28,6 +28,10 @@ import { rawGraph } from "@/data/raw-graph";
 import { transformGraph } from "@/utils/transform-graph";
 import { LineageNode } from "@/types/lineage";
 
+import GroupNode from "./nodes/GroupNode";
+
+// ...
+
 const nodeTypes: NodeTypes = {
     agent: AgentNode,
     llm: LLMNode,
@@ -35,6 +39,7 @@ const nodeTypes: NodeTypes = {
     tool: ToolNode,
     start: StartNode,
     end: EndNode,
+    group: GroupNode,
 };
 
 const edgeTypes: EdgeTypes = {

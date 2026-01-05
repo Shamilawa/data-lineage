@@ -15,6 +15,8 @@ export interface BaseNodeData {
     timestamp?: string;
     duration?: string;
     status?: "active" | "success" | "failure" | "idle";
+    category?: string;
+    color?: string;
 }
 
 export interface AgentNodeData extends BaseNodeData {

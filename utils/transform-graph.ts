@@ -13,7 +13,7 @@ export function transformGraph(rawGraph: any): {
     let stepCounter = 1;
 
     // Layout Scale Factors to prevent overlap
-    const SCALE_X = 2.5;
+    const SCALE_X = 2.0;
     const SCALE_Y = 2.5;
 
     // 1. First Pass: Identify Shared LLMs and calculate their ideal position
@@ -69,6 +69,7 @@ export function transformGraph(rawGraph: any): {
                 provider: info.data.provider,
                 label: "Shared Brain",
                 status: "success",
+                category: "llm_tool",
             },
         });
     });
@@ -112,7 +113,7 @@ export function transformGraph(rawGraph: any): {
         // Dynamic Spacing: If node has multiple outgoing connections (hub),
         // give it extra horizontal space to let edges breathe.
         if (outgoingEdges > 1) {
-            scaledX += 150; // Push it further right
+            scaledX += 80; // Push it further right
         }
 
         const scaledY = rawNode.position.y * SCALE_Y;
@@ -143,6 +144,7 @@ export function transformGraph(rawGraph: any): {
                     status: "success",
                     inputs: { description: rawNode.data.description },
                     outputs: { result: "Task Completed" },
+                    category: "agent_tool",
                 },
             });
 
@@ -169,7 +171,7 @@ export function transformGraph(rawGraph: any): {
                     targetHandle: "top",
                     type: "sequence",
                     animated: true,
-                    style: { stroke: "#a855f7" },
+                    style: { stroke: "#0e7490" },
                     data: { stepNumber: stepCounter++ },
                 });
 
@@ -182,7 +184,7 @@ export function transformGraph(rawGraph: any): {
                     targetHandle: "bottom",
                     type: "sequence",
                     animated: true,
-                    style: { stroke: "#a855f7" },
+                    style: { stroke: "#0e7490" },
                     data: { stepNumber: stepCounter++ },
                 });
             }
@@ -195,7 +197,7 @@ export function transformGraph(rawGraph: any): {
 
                     // Horizontal Spacing for Tools
                     // Distribute symmetrically around the agent's center
-                    const TOOL_SPACING = 300;
+                    const TOOL_SPACING = 250;
                     const offsetX =
                         (index - (tools.length - 1) / 2) * TOOL_SPACING;
                     const toolX = scaledX + offsetX;
@@ -210,6 +212,7 @@ export function transformGraph(rawGraph: any): {
                             description: tool.description,
                             inputs: tool.usage,
                             outputs: tool.output,
+                            category: "node_tool",
                         },
                     });
 
@@ -279,5 +282,83 @@ export function transformGraph(rawGraph: any): {
         }
     }
 
-    return { nodes, edges };
+    // 4. Final Pass: Create Group/Layer Nodes
+    const groups: LineageNode[] = [];
+
+    // Helper to calculate bounds
+    const createGroup = (catId: string, label: string, color: string) => {
+        const catNodes = nodes.filter((n) => n.data.category === catId);
+        if (catNodes.length === 0) return;
+
+        const minX = Math.min(...catNodes.map((n) => n.position.x));
+        const maxX = Math.max(
+            ...catNodes.map((n) => {
+                // Safety widths based on component styling
+                const width =
+                    catId === "agent_tool" || catId === "llm_tool" ? 320 : 260; // Agents/LLMs are wider (~280px)
+                return n.position.x + width;
+            })
+        );
+        const minY = Math.min(...catNodes.map((n) => n.position.y));
+        const maxY = Math.max(
+            ...catNodes.map((n) => {
+                const height = catId === "agent_tool" ? 180 : 120; // Agents are taller
+                return n.position.y + height;
+            })
+        );
+
+        const padding = 40; // Tightened padding as requested
+
+        groups.push({
+            id: `group-${catId}`,
+            type: "group",
+            position: { x: minX - padding, y: minY - padding },
+            style: {
+                width: maxX - minX + padding * 2,
+                height: maxY - minY + padding * 2,
+                zIndex: -1,
+                border: "none", // Prevent default React Flow border
+                backgroundColor: "transparent", // Prevent default background
+            },
+            data: {
+                label: label,
+                color: color,
+            },
+            draggable: false,
+            selectable: false,
+        });
+    };
+
+    createGroup("agent_tool", "Agents", "#3b82f6"); // Blue
+    createGroup("node_tool", "Tools", "#64748b"); // Slate
+    createGroup("llm_tool", "Intelligence Sources", "#0e7490"); // Cyan (Enterprise)
+
+    // 5. Post-Process: Assign Parent/Child Relationships
+    // This locks the nodes into their groups
+    const groupMap = new Map(groups.map((g) => [g.id, g]));
+
+    nodes.forEach((node) => {
+        if (node.data.category) {
+            const groupId = `group-${node.data.category}`;
+            const group = groupMap.get(groupId);
+
+            if (group) {
+                // Set Parent
+                node.parentId = groupId;
+                // Restrict movement to within parent
+                node.extent = "parent";
+
+                // Convert Absolute Position to Relative Position
+                node.position = {
+                    x: node.position.x - group.position.x,
+                    y: node.position.y - group.position.y,
+                };
+            }
+        }
+    });
+
+    // Parent nodes must come before child nodes in the array
+    const finalNodes = [...groups, ...nodes];
+
+    return { nodes: finalNodes, edges };
 }

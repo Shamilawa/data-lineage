@@ -5,12 +5,11 @@ import { Play } from "lucide-react";
 const StartNode = () => {
     return (
         <div className="relative group">
-            <div className="relative flex items-center justify-center w-12 h-12 bg-emerald-500 rounded-full border-4 border-emerald-100 shadow-md transition-transform group-hover:scale-105">
-                <Play className="w-5 h-5 text-white ml-0.5 fill-white" />
-            </div>
-
-            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+            <div className="px-3 py-1.5 bg-white border-2 border-slate-200 rounded-md shadow-sm transition-all duration-200 hover:shadow-md hover:border-emerald-400 flex items-center gap-2">
+                <div className="w-6 h-6 rounded bg-emerald-50 flex items-center justify-center border border-emerald-100">
+                    <Play className="w-3 h-3 text-emerald-600 ml-0.5" />
+                </div>
+                <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">
                     Start
                 </span>
             </div>
