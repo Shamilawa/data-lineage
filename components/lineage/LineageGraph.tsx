@@ -317,7 +317,7 @@ const LineageGraphContent = () => {
             const isSharedBrainEdge =
                 sourceNode?.type === "llm" || targetNode?.type === "llm";
 
-            let style = { ...edge.style };
+            const style = { ...edge.style };
             let animated = edge.animated;
             let stroke = style.stroke || "#cbd5e1";
             let opacity = 1;
