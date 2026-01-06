@@ -21,6 +21,7 @@ export interface BaseNodeData {
     }>;
     interactions?: Array<{
         title: string;
+        withNode?: string;
         input: any;
         output: any;
     }>;

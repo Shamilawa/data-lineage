@@ -330,9 +330,16 @@ const NodeInteractionAccordion = ({
                                     : "hover:bg-slate-50"
                             )}
                         >
-                            <span className="font-semibold text-sm text-slate-800">
-                                {interaction.title}
-                            </span>
+                            <div className="flex items-center gap-2">
+                                <span className="font-semibold text-sm text-slate-800">
+                                    {interaction.title}
+                                </span>
+                                {interaction.withNode && (
+                                    <span className="text-[10px] uppercase font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
+                                        With: {interaction.withNode}
+                                    </span>
+                                )}
+                            </div>
                             {isOpen ? (
                                 <ChevronDown className="w-4 h-4 text-slate-400" />
                             ) : (
