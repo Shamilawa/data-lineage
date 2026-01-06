@@ -90,6 +90,81 @@ export function transformGraph(rawGraph: any): {
                 status: "success",
                 description:
                     "Analyzes user requests to determine travel intent and orchestrates the necessary tools for flight discovery.",
+                xaiTimeline: [
+                    {
+                        title: "Planner Agent receive the Input",
+                        type: "input",
+                        content:
+                            "User Input: Book flight to NYC next Friday...",
+                    },
+                    {
+                        title: "Planner Agent call LLM tool",
+                        type: "llm",
+                        content:
+                            "Consulting Shared Brain for intent extraction...",
+                    },
+                    {
+                        title: "Planner Agent receive output",
+                        type: "output",
+                        content:
+                            "Intent: book_flight, Dest: NYC, Date: 2026-01-12",
+                    },
+                    {
+                        title: "Planner Agent called the tool api - amadeus_flight_search",
+                        type: "tool",
+                        content: "Invoking Flight Search Tool...",
+                    },
+                    {
+                        title: "Planner Agent received the output from tool-api",
+                        type: "output",
+                        content: "Received 2 flight offers from Amadeus",
+                    },
+                ],
+                interactions: [
+                    {
+                        title: "Interaction with: Shared Brain",
+                        input: {
+                            role: "user",
+                            content:
+                                "Extract travel intent from: 'Book flight to NYC next Friday...'",
+                        },
+                        output: {
+                            role: "assistant",
+                            content: {
+                                intent: "book_flight",
+                                destination: "NYC",
+                                date: "2026-01-12",
+                            },
+                        },
+                    },
+                    {
+                        title: "Interaction with: Flight Search Tool",
+                        input: {
+                            origin: "SFO",
+                            destination: "JFK",
+                            date: "2026-01-12",
+                        },
+                        output: {
+                            offers: [
+                                { id: "DL114", price: "$450" },
+                                { id: "UA202", price: "$480" },
+                            ],
+                        },
+                    },
+                    {
+                        title: "Interaction with: Booking Agent",
+                        input: {
+                            action: "delegate_task",
+                            reason: "Flight found, proceeding to booking",
+                        },
+                        output: {
+                            data_handoff: {
+                                selected_flight: "DL114",
+                                passenger_id: "user_123",
+                            },
+                        },
+                    },
+                ],
                 inputs: {
                     source: "User Chat",
                     content: "Book flight to NYC next Friday...",
@@ -125,6 +200,70 @@ export function transformGraph(rawGraph: any): {
                 status: "success",
                 description:
                     "Finalizes the reservation by selecting the best flight, generating a PNR, and initiating the confirmation process.",
+                xaiTimeline: [
+                    {
+                        title: "Booking Agent receive the Input",
+                        type: "input",
+                        content: "Selected Flight: DL114, Passenger: John Doe",
+                    },
+                    {
+                        title: "Booking Agent call LLM tool",
+                        type: "llm",
+                        content:
+                            "Validating policy and budget with Shared Brain...",
+                    },
+                    {
+                        title: "Booking Agent receive output",
+                        type: "output",
+                        content: "flight_id: DL114, status: Validated",
+                    },
+                    {
+                        title: "Booking Agent called the tool api - sendgrid_email",
+                        type: "tool",
+                        content: "Sending confirmation email...",
+                    },
+                    {
+                        title: "Booking Agent received the output from tool-api",
+                        type: "output",
+                        content: "Email Sent (202 Accepted)",
+                    },
+                ],
+                interactions: [
+                    {
+                        title: "Interaction with: Planner Agent",
+                        input: {
+                            source: "Planner Agent",
+                            type: "handoff_received",
+                        },
+                        output: {
+                            selected_flight: "DL114",
+                            passenger_id: "user_123",
+                        },
+                    },
+                    {
+                        title: "Interaction with: Shared Brain",
+                        input: {
+                            task: "Validate booking policy",
+                            context: { flight: "DL114", price: 450 },
+                        },
+                        output: {
+                            status: "approved",
+                            reasoning: "Within budget cap of $500",
+                        },
+                    },
+                    {
+                        title: "Interaction with: Email Tool",
+                        input: {
+                            to: "user@example.com",
+                            subject: "Flight Confirmation",
+                            body: "Your flight DL114 is confirmed.",
+                        },
+                        output: {
+                            statusCode: 202,
+                            message: "Queued",
+                        },
+                    },
+                ],
                 inputs: {
                     searchResults: [
                         {

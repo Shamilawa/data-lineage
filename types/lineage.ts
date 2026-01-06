@@ -11,6 +11,16 @@ export type LineageNodeType =
 export interface BaseNodeData {
     label: string;
     description?: string;
+    xaiTimeline?: Array<{
+        title: string;
+        type: "input" | "output" | "tool" | "llm" | "processing";
+        content: string;
+    }>;
+    interactions?: Array<{
+        title: string;
+        input: any;
+        output: any;
+    }>;
     inputs?: Record<string, any>;
     outputs?: Record<string, any>;
     timestamp?: string;
