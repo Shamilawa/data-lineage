@@ -20,7 +20,6 @@ const agentGroup: LineageNode = {
     },
     data: { label: "Agents", color: "#3b82f6" },
     draggable: false,
-    content: undefined,
 };
 
 const toolGroup: LineageNode = {
@@ -36,7 +35,6 @@ const toolGroup: LineageNode = {
     },
     data: { label: "Tools", color: "#64748b" },
     draggable: false,
-    content: undefined,
 };
 
 const intelligenceGroup: LineageNode = {
@@ -52,7 +50,6 @@ const intelligenceGroup: LineageNode = {
     },
     data: { label: "Intelligence Sources", color: "#0e7490" },
     draggable: false,
-    content: undefined,
 };
 // Note: Widths are estimates, transformGraph might adjust them but we provide defaults.
 

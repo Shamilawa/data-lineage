@@ -105,7 +105,7 @@ const LineageGraphContent = () => {
         const sortedEdges = [...edges]
             .filter((e) => typeof e.data?.stepNumber === "number")
             .sort(
-                (a, b) => (a.data.stepNumber || 0) - (b.data.stepNumber || 0)
+                (a, b) => (a.data?.stepNumber || 0) - (b.data?.stepNumber || 0)
             );
 
         // 3. Add target nodes of the sequence

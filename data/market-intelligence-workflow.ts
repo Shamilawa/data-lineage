@@ -60,6 +60,10 @@ const supervisorNode: LineageNode = {
                     assigned_to: "agent-enrichment",
                     tracking_id: "job-8822",
                 },
+                inputSummary:
+                    "Directive: enrich raw data with geopolitical and supply chain context.",
+                outputSummary:
+                    "Task accepted. Job #8822 initiated by Enrichment Agent.",
             },
             {
                 title: "Delegate: Risk Analysis",
@@ -74,6 +78,10 @@ const supervisorNode: LineageNode = {
                     assigned_to: "agent-analysis",
                     tracking_id: "job-8823",
                 },
+                inputSummary:
+                    "Directive: analyze enriched data for political instability and vendor reliability.",
+                outputSummary:
+                    "Task accepted. Job #8823 initiated by Intelligence Analyst.",
             },
             {
                 title: "Delegate: Synthesis",
@@ -88,6 +96,10 @@ const supervisorNode: LineageNode = {
                     assigned_to: "agent-synthesis",
                     tracking_id: "job-8824",
                 },
+                inputSummary:
+                    "Directive: generate executive brief based on analysis results.",
+                outputSummary:
+                    "Task accepted. Job #8824 initiated by Synthesis Agent.",
             },
         ],
     },
@@ -144,6 +156,10 @@ const ingestionAgent: LineageNode = {
                         "Regional tensions rise over critical tech exports",
                     ],
                 },
+                inputSummary:
+                    "Querying news feed for TechGlobal (TGLB) in APAC region.",
+                outputSummary:
+                    "Result: 14 articles. Top headlines indicate quantum hub development and regional tensions.",
             },
         ],
     },
@@ -169,6 +185,10 @@ const enrichmentAgent: LineageNode = {
                     namespace: "geopolitical-risks-2024",
                     top_k: 3,
                 },
+                inputSummary:
+                    "Querying vector store for geopolitical risks in 2024.",
+                outputSummary:
+                    "Result: 3 matches. Top risk profiles indicate medium political risk and supply chain shock.",
                 output: {
                     matches: [
                         {
@@ -291,6 +311,10 @@ const synthesisAgent: LineageNode = {
                     db_id: 102938,
                     timestamp: "2024-06-15T14:30:00Z",
                 },
+                inputSummary:
+                    "Saving report to database. Restricted access level.",
+                outputSummary:
+                    "Report saved to database. ID: 102938. Timestamp: 2024-06-15T14:30:00Z.",
             },
         ],
     },
