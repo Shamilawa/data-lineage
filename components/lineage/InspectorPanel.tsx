@@ -189,8 +189,8 @@ const NodeContent = ({ node }: { node: LineageNode }) => {
                                 </p>
                             )}
 
-                            {/* xAI Interaction Timeline Feature */}
-                            {(data as any).xaiTimeline && (
+                            {/* Reasoning Trace Feature (Replaces Timeline) */}
+                            {(data as any).agentReasoning && (
                                 <div className="pt-2 border-t border-slate-100">
                                     {!showTimeline && !isGenerating ? (
                                         <button
@@ -199,26 +199,26 @@ const NodeContent = ({ node }: { node: LineageNode }) => {
                                                 setTimeout(() => {
                                                     setIsGenerating(false);
                                                     setShowTimeline(true);
-                                                }, 1500);
+                                                }, 1000);
                                             }}
                                             className="w-full py-2.5 px-4 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center justify-center gap-2 shadow-sm"
                                         >
-                                            <Activity className="w-4 h-4 text-blue-600" />
-                                            Generate Interaction Analysis
+                                            <BrainCircuit className="w-4 h-4 text-blue-600" />
+                                            Generate Agent Reasoning
                                         </button>
                                     ) : isGenerating ? (
                                         <div className="flex flex-col items-center justify-center py-8 space-y-3 bg-slate-50/50 rounded-lg border border-slate-100">
                                             <div className="w-5 h-5 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
                                             <p className="text-xs text-slate-500 font-medium">
-                                                Analyzing agent decision path...
+                                                Retrieving thought process...
                                             </p>
                                         </div>
                                     ) : (
                                         <div className="animate-in fade-in slide-in-from-bottom-1 duration-300">
-                                            <div className="flex items-center justify-between mb-4">
+                                            <div className="flex items-center justify-between mb-3">
                                                 <h3 className="font-bold text-xs uppercase text-slate-500 flex items-center gap-2 tracking-wider">
-                                                    <Activity className="w-3 h-3" />
-                                                    Interaction Timeline
+                                                    <BrainCircuit className="w-3 h-3" />
+                                                    Thinking Process
                                                 </h3>
                                                 <button
                                                     onClick={() =>
@@ -230,69 +230,8 @@ const NodeContent = ({ node }: { node: LineageNode }) => {
                                                 </button>
                                             </div>
 
-                                            <div className="relative pl-4 border-l-2 border-slate-100 space-y-6">
-                                                {(
-                                                    (data as any)
-                                                        .xaiTimeline as any[]
-                                                ).map((event, idx) => (
-                                                    <div
-                                                        key={idx}
-                                                        className="relative"
-                                                    >
-                                                        {/* Timeline Dot */}
-                                                        <div
-                                                            className={cn(
-                                                                "absolute -left-[21px] top-1 w-3 h-3 rounded-full border-2 bg-white",
-                                                                event.type ===
-                                                                    "input"
-                                                                    ? "border-blue-500 ring-2 ring-blue-50"
-                                                                    : event.type ===
-                                                                      "llm"
-                                                                    ? "border-indigo-500 ring-2 ring-indigo-50"
-                                                                    : event.type ===
-                                                                      "tool"
-                                                                    ? "border-slate-500 ring-2 ring-slate-50"
-                                                                    : event.type ===
-                                                                      "output"
-                                                                    ? "border-emerald-500 ring-2 ring-emerald-50"
-                                                                    : "border-slate-400"
-                                                            )}
-                                                        />
-
-                                                        <div className="bg-white rounded pl-4 pb-6 border-l border-slate-100 ml-px">
-                                                            <div className="flex items-center gap-2 mb-1.5">
-                                                                <span
-                                                                    className={cn(
-                                                                        "text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded",
-                                                                        event.type ===
-                                                                            "input"
-                                                                            ? "bg-blue-50 text-blue-700"
-                                                                            : event.type ===
-                                                                              "llm"
-                                                                            ? "bg-indigo-50 text-indigo-700"
-                                                                            : event.type ===
-                                                                              "tool"
-                                                                            ? "bg-slate-100 text-slate-700"
-                                                                            : event.type ===
-                                                                              "output"
-                                                                            ? "bg-emerald-50 text-emerald-700"
-                                                                            : "text-slate-500"
-                                                                    )}
-                                                                >
-                                                                    {event.type}
-                                                                </span>
-                                                                <span className="text-xs font-semibold text-slate-900">
-                                                                    {
-                                                                        event.title
-                                                                    }
-                                                                </span>
-                                                            </div>
-                                                            <p className="text-xs text-slate-500 leading-normal pl-1">
-                                                                {event.content}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                ))}
+                                            <div className="bg-slate-50 border border-slate-100 rounded-lg p-3 text-sm text-slate-700 font-mono leading-relaxed whitespace-pre-wrap shadow-inner">
+                                                {(data as any).agentReasoning}
                                             </div>
                                         </div>
                                     )}

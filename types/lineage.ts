@@ -11,6 +11,7 @@ export type LineageNodeType =
 export interface BaseNodeData {
     label: string;
     description?: string;
+    agentReasoning?: string;
     xaiTimeline?: Array<{
         title: string;
         type: "input" | "output" | "tool" | "llm" | "processing";

@@ -90,36 +90,18 @@ export function transformGraph(rawGraph: any): {
                 status: "success",
                 description:
                     "Analyzes user requests to determine travel intent and orchestrates the necessary tools for flight discovery.",
-                xaiTimeline: [
-                    {
-                        title: "Planner Agent receive the Input",
-                        type: "input",
-                        content:
-                            "User Input: Book flight to NYC next Friday...",
-                    },
-                    {
-                        title: "Planner Agent call LLM tool",
-                        type: "llm",
-                        content:
-                            "Consulting Shared Brain for intent extraction...",
-                    },
-                    {
-                        title: "Planner Agent receive output",
-                        type: "output",
-                        content:
-                            "Intent: book_flight, Dest: NYC, Date: 2026-01-12",
-                    },
-                    {
-                        title: "Planner Agent called the tool api - amadeus_flight_search",
-                        type: "tool",
-                        content: "Invoking Flight Search Tool...",
-                    },
-                    {
-                        title: "Planner Agent received the output from tool-api",
-                        type: "output",
-                        content: "Received 2 flight offers from Amadeus",
-                    },
-                ],
+                agentReasoning: `**User Intent Analysis:**
+The user has clearly expressed a desire to book a flight to **New York City** for **next Friday**.
+
+**Reasoning:**
+1.  **Intent Recognition**: The request "Book flight to NYC" maps to the \`FlightBooking\` capability.
+2.  **Missing Information**: Specific flight details (time, airline) are missing, but the destination (JFK/LGA) and date (Next Friday) are sufficient to initiate a search.
+3.  **Action Plan**: I need to query the availability of flights before I can proceed with any booking.
+
+**Next Step:**
+Delegating to the **Flight Search Tool** with parameters:
+-   Destination: \`JFK\`
+-   Date: \`2023-10-27\` (Derived from "Next Friday")`,
                 interactions: [
                     {
                         title: "Interaction with: Shared Brain",
@@ -200,34 +182,19 @@ export function transformGraph(rawGraph: any): {
                 status: "success",
                 description:
                     "Finalizes the reservation by selecting the best flight, generating a PNR, and initiating the confirmation process.",
-                xaiTimeline: [
-                    {
-                        title: "Booking Agent receive the Input",
-                        type: "input",
-                        content: "Selected Flight: DL114, Passenger: John Doe",
-                    },
-                    {
-                        title: "Booking Agent call LLM tool",
-                        type: "llm",
-                        content:
-                            "Validating policy and budget with Shared Brain...",
-                    },
-                    {
-                        title: "Booking Agent receive output",
-                        type: "output",
-                        content: "flight_id: DL114, status: Validated",
-                    },
-                    {
-                        title: "Booking Agent called the tool api - sendgrid_email",
-                        type: "tool",
-                        content: "Sending confirmation email...",
-                    },
-                    {
-                        title: "Booking Agent received the output from tool-api",
-                        type: "output",
-                        content: "Email Sent (202 Accepted)",
-                    },
-                ],
+                agentReasoning: `**Search Results Analysis:**
+The **Flight Search Tool** returned multiple options.
+-   Option 1: Delta DL114 ($450) - **Best Match**
+-   Option 2: United UA220 ($480)
+-   Option 3: JetBlue JB909 ($500)
+
+**Decision Logic:**
+1.  **Policy Check**: Corporate policy prefers the lowest cost option under $600.
+2.  **Selection**: **Delta DL114** is the most cost-effective and fits the schedule.
+3.  **Verification**: Confirming user preferences match this selection.
+
+**Next Step:**
+Proceeding to finalize the booking for **DL114** and notifying the user via Email.`,
                 interactions: [
                     {
                         title: "Interaction with: Planner Agent",
