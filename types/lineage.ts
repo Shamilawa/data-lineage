@@ -6,7 +6,9 @@ export type LineageNodeType =
     | "agent"
     | "llm"
     | "prompt"
-    | "tool";
+    | "tool"
+    | "supervisor"
+    | "data-store";
 
 export interface BaseNodeData {
     label: string;

@@ -16,6 +16,7 @@ import ReactFlow, {
 import "reactflow/dist/style.css";
 import { transformGraph } from "@/utils/transform-graph";
 import { flightWorkflowGraph } from "@/data/flight-workflow";
+import { marketIntelligenceWorkflow } from "@/data/market-intelligence-workflow";
 import StartNode from "./nodes/StartNode";
 import EndNode from "./nodes/EndNode";
 import AgentNode from "./nodes/AgentNode";
@@ -23,6 +24,8 @@ import LLMNode from "./nodes/LLMNode";
 import PromptNode from "./nodes/PromptNode";
 import ToolNode from "./nodes/ToolNode";
 import GroupNode from "./nodes/GroupNode";
+import SupervisorNode from "./nodes/SupervisorNode";
+import DataStoreNode from "./nodes/DataStoreNode";
 import SequenceEdge from "./edges/SequenceEdge";
 import InspectorPanel from "./InspectorPanel";
 import PlaybackControls from "./PlaybackControls";
@@ -35,6 +38,8 @@ const nodeTypes = {
     llm: LLMNode,
     prompt: PromptNode,
     tool: ToolNode,
+    supervisor: SupervisorNode,
+    "data-store": DataStoreNode,
     group: GroupNode,
 };
 
@@ -59,14 +64,33 @@ const DEMO_STEPS = [
 ];
 
 const LineageGraphContent = () => {
+    const reactFlowInstance = useReactFlow();
+    const [activeWorkflowKey, setActiveWorkflowKey] = useState<
+        "flight" | "market"
+    >("flight");
+
+    const activeWorkflowData = useMemo(() => {
+        return activeWorkflowKey === "flight"
+            ? flightWorkflowGraph
+            : marketIntelligenceWorkflow;
+    }, [activeWorkflowKey]);
+
     // 1. Transform Data
     const { nodes: initialNodes, edges: initialEdges } = useMemo(
-        () => transformGraph(flightWorkflowGraph),
-        []
+        () => transformGraph(activeWorkflowData),
+        [activeWorkflowData]
     );
 
     const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
     const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+
+    // Update nodes when workflow changes
+    useEffect(() => {
+        setNodes(initialNodes);
+        setEdges(initialEdges);
+        // Reset view
+        setTimeout(() => reactFlowInstance.fitView({ duration: 800 }), 100);
+    }, [initialNodes, initialEdges, reactFlowInstance, setNodes, setEdges]);
 
     const [selectedItem, setSelectedItem] = useState<
         LineageNode | LineageEdge | null
@@ -76,7 +100,6 @@ const LineageGraphContent = () => {
     const [currentStepIndex, setCurrentStepIndex] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
     const [isSimulationMode, setIsSimulationMode] = useState(false);
-    const reactFlowInstance = useReactFlow();
 
     // Auto-focus logic
     useEffect(() => {
@@ -222,6 +245,29 @@ const LineageGraphContent = () => {
 
     return (
         <div className="w-full h-full relative overflow-hidden bg-slate-50">
+            {/* Header / Workflow Switcher */}
+            <div className="absolute top-4 left-4 z-50 bg-white/90 backdrop-blur-sm p-1.5 rounded-lg shadow-sm border border-slate-200 flex items-center gap-2">
+                <span className="text-xs font-semibold text-slate-500 px-2">
+                    Workflow:
+                </span>
+                <select
+                    value={activeWorkflowKey}
+                    onChange={(e) => {
+                        setActiveWorkflowKey(
+                            e.target.value as "flight" | "market"
+                        );
+                        setIsSimulationMode(false); // Reset sim when switching
+                        setSelectedItem(null);
+                    }}
+                    className="text-sm font-medium text-slate-700 bg-transparent border-none outline-none cursor-pointer hover:bg-slate-50 rounded px-1 py-0.5"
+                >
+                    <option value="flight">Flight Booking Demo</option>
+                    <option value="market">
+                        Enterprise Market Intelligence
+                    </option>
+                </select>
+            </div>
+
             <ReactFlow
                 nodes={visibleNodes}
                 edges={visibleEdges}
