@@ -104,6 +104,7 @@ const LineageGraph = () => {
                 {/* Inspector Slide-over */}
                 <InspectorPanel
                     selectedItem={selectedItem}
+                    nodes={nodes}
                     onClose={() => setSelectedItem(null)}
                 />
             </ReactFlowProvider>

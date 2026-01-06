@@ -13,8 +13,11 @@ import { getStatusBadgeStyles } from "@/utils/node-styling";
 import { cn } from "@/lib/utils"; // Assuming standard shadcn utils
 import { LineageNode, LineageEdge } from "@/types/lineage";
 
+import EdgeInspectorPanel from "./EdgeInspectorPanel";
+
 interface InspectorPanelProps {
     selectedItem: LineageNode | LineageEdge | null;
+    nodes: LineageNode[];
     onClose: () => void;
 }
 
@@ -27,12 +30,26 @@ const formatJson = (data: any) => {
     }
 };
 
-const InspectorPanel = ({ selectedItem, onClose }: InspectorPanelProps) => {
+const InspectorPanel = ({
+    selectedItem,
+    nodes,
+    onClose,
+}: InspectorPanelProps) => {
     if (!selectedItem) return null;
 
     // Determine type (Node or Edge)
     const isNode = "data" in selectedItem && "position" in selectedItem;
     const isEdge = "source" in selectedItem && "target" in selectedItem;
+
+    // If it's an edge, find the source and target nodes for context
+    let sourceNode: LineageNode | undefined;
+    let targetNode: LineageNode | undefined;
+
+    if (isEdge) {
+        const edge = selectedItem as LineageEdge;
+        sourceNode = nodes.find((n) => n.id === edge.source);
+        targetNode = nodes.find((n) => n.id === edge.target);
+    }
 
     return (
         <div className="absolute right-0 top-0 h-full w-[450px] bg-white shadow-2xl border-l border-slate-200 z-50 flex flex-col animate-in slide-in-from-right duration-300">
@@ -65,7 +82,7 @@ const InspectorPanel = ({ selectedItem, onClose }: InspectorPanelProps) => {
                         ) : (
                             <span className="flex items-center gap-2">
                                 <ArrowRight className="w-4 h-4 text-slate-400" />
-                                Data Payload
+                                Edge Connection
                             </span>
                         )}
                     </h2>
@@ -84,7 +101,13 @@ const InspectorPanel = ({ selectedItem, onClose }: InspectorPanelProps) => {
             {/* Content Area */}
             <div className="flex-1 overflow-y-auto">
                 {isNode && <NodeContent node={selectedItem as LineageNode} />}
-                {isEdge && <EdgeContent edge={selectedItem as LineageEdge} />}
+                {isEdge && (
+                    <EdgeInspectorPanel
+                        edge={selectedItem as LineageEdge}
+                        sourceNode={sourceNode}
+                        targetNode={targetNode}
+                    />
+                )}
             </div>
         </div>
     );
@@ -407,24 +430,6 @@ const NodeInteractionAccordion = ({
                     </div>
                 );
             })}
-        </div>
-    );
-};
-
-const EdgeContent = ({ edge }: { edge: LineageEdge }) => {
-    return (
-        <div className="p-4 space-y-4">
-            <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                <div className="flex items-center gap-2 mb-2">
-                    <Database className="w-4 h-4 text-slate-400" />
-                    <span className="text-xs font-bold text-slate-700">
-                        Payload Data
-                    </span>
-                </div>
-                <pre className="text-[10px] text-slate-500 font-mono overflow-auto max-h-[400px]">
-                    {JSON.stringify(edge.data?.payload || {}, null, 2)}
-                </pre>
-            </div>
         </div>
     );
 };
