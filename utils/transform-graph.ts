@@ -12,72 +12,28 @@ export function transformGraph(rawGraph: any): {
 
     // 1. Nodes
 
-    // Groups (Infrastructure Layer)
-    const groups: LineageNode[] = [
-        {
-            id: "group-agent_tool",
-            type: "group",
-            position: { x: 350, y: 100 },
-            style: {
-                width: 900,
-                height: 250,
-                zIndex: -1,
-                border: "none",
-                backgroundColor: "transparent",
-            },
-            data: { label: "Agents", color: "#3b82f6" },
-            draggable: false,
-            selected: false,
-        },
-        {
-            id: "group-node_tool",
-            type: "group",
-            position: { x: 350, y: 450 },
-            style: {
-                width: 900,
-                height: 200,
-                zIndex: -1,
-                border: "none",
-                backgroundColor: "transparent",
-            },
-            data: { label: "Tools", color: "#64748b" },
-            draggable: false,
-            selected: false,
-        },
-        {
-            id: "group-llm_tool",
-            type: "group",
-            position: { x: 350, y: 750 },
-            style: {
-                width: 900,
-                height: 200,
-                zIndex: -1,
-                border: "none",
-                backgroundColor: "transparent",
-            },
-            data: { label: "Intelligence Sources", color: "#0e7490" },
-            draggable: false,
-            selected: false,
-        },
-    ];
+    // --- Dynamic Graph Generation ---
 
-    const nodes: LineageNode[] = [
-        // --- Start Node (User) ---
-        {
-            id: "start-1",
-            type: "start",
-            position: { x: 50, y: 180 },
-            data: {
-                label: "User Request",
-                status: "success",
-                description:
-                    "Initiates the workflow with the user's initial travel query.",
-            },
+    const NODE_WIDTH_ESTIMATE = 250; // Approx max width of a node
+    const BASE_PADDING_X = 50;
+    const BASE_PADDING_Y = 80;
+
+    // 1. Define Child Nodes (Agents, Tools, LLMs)
+    // Note: positions are relative to their parent group (extent: 'parent')
+    const startNode: LineageNode = {
+        id: "start-1",
+        type: "start",
+        position: { x: 50, y: 180 },
+        data: {
+            label: "User Request",
+            status: "success",
+            description:
+                "Initiates the workflow with the user's initial travel query.",
         },
+    };
 
-        // --- Agents (Row 1, Y=180) --
-
-        // Planner Agent
+    // --- Agents (Row 1) ---
+    const agents: LineageNode[] = [
         {
             id: "agent-planner",
             type: "agent",
@@ -175,7 +131,7 @@ Delegating to the **Flight Search Tool** with parameters:
             type: "agent",
             parentId: "group-agent_tool",
             extent: "parent",
-            position: { x: 550, y: 80 },
+            position: { x: 350, y: 80 },
             data: {
                 label: "Booking Agent",
                 agentType: "Worker",
@@ -264,9 +220,10 @@ Proceeding to finalize the booking for **DL114** and notifying the user via Emai
                 duration: "1.5s",
             },
         },
+    ];
 
-        // --- Tools (Row 2, Y=500) ---
-
+    // --- Tools (Row 2) ---
+    const tools: LineageNode[] = [
         // Search Tool (Below Planner)
         {
             id: "tool-search",
@@ -368,7 +325,7 @@ Proceeding to finalize the booking for **DL114** and notifying the user via Emai
             type: "tool",
             parentId: "group-node_tool",
             extent: "parent",
-            position: { x: 550, y: 50 },
+            position: { x: 350, y: 50 },
             data: {
                 label: "Email Tool",
                 toolName: "SendGridV3",
@@ -400,14 +357,16 @@ Proceeding to finalize the booking for **DL114** and notifying the user via Emai
                 category: "node_tool",
             },
         },
+    ];
 
-        // --- LLM (Row 3, Y=800) ---
+    // --- Intelligence (Row 3) ---
+    const intelligence: LineageNode[] = [
         {
             id: "llm-shared",
             type: "llm",
             parentId: "group-llm_tool",
             extent: "parent",
-            position: { x: 300, y: 50 },
+            position: { x: 50, y: 50 },
             data: {
                 model: "gpt-4-turbo-preview",
                 provider: "OpenAI",
@@ -517,9 +476,120 @@ Proceeding to finalize the booking for **DL114** and notifying the user via Emai
         },
     ];
 
-    const finalNodes = [...groups, ...nodes];
+    // Helper to calculate group dimensions based on children
+    const calculateGroupStyle = (
+        children: LineageNode[],
+        defaultWidth: number,
+        defaultHeight: number
+    ) => {
+        if (children.length === 0)
+            return {
+                width: defaultWidth,
+                height: defaultHeight,
+                zIndex: -1,
+                border: "none",
+                backgroundColor: "transparent",
+            };
 
-    // 2. Edges
+        // Find max extent of children
+        // Since position is top-left, we assume a standard node width to find the right edge
+        const maxX = Math.max(...children.map((c) => c.position.x));
+        const maxY = Math.max(...children.map((c) => c.position.y));
+
+        return {
+            width: maxX + NODE_WIDTH_ESTIMATE + BASE_PADDING_X,
+            height: maxY + 120 + BASE_PADDING_Y, // Height + padding
+            zIndex: -1,
+            border: "none",
+            backgroundColor: "transparent",
+        };
+    };
+
+    // --- Calculate Groups Dynamic Styles ---
+
+    // 1. Agents Group
+    const agentsStyle = calculateGroupStyle(agents, 650, 250);
+    const agentGroupX = 350;
+
+    // 2. Tools Group
+    const toolsStyle = calculateGroupStyle(tools, 650, 200);
+    const toolGroupX = 350;
+
+    // 3. Intelligence Group (Shared Layer)
+    // Needs to span the full width of the graph to represent a shared foundation
+    const maxGraphWidth = Math.max(agentsStyle.width, toolsStyle.width);
+
+    // Calculate centered Brain position
+    const brainNodeWidth = 250; // Approximated
+    const centeredBrainX = (maxGraphWidth - brainNodeWidth) / 2;
+
+    // Update Shared Brain Position dynamically to be centered
+    const intelligenceNodes = intelligence.map((node) => ({
+        ...node,
+        position: { x: centeredBrainX > 50 ? centeredBrainX : 50, y: 50 },
+    }));
+
+    const intelligenceStyle = calculateGroupStyle(
+        intelligenceNodes,
+        maxGraphWidth,
+        200
+    );
+    // Override width to match the full graph (Shared Layer visual)
+    intelligenceStyle.width = maxGraphWidth;
+
+    const groups: LineageNode[] = [
+        {
+            id: "group-agent_tool",
+            type: "group",
+            position: { x: agentGroupX, y: 100 },
+            style: agentsStyle,
+            data: { label: "Agents", color: "#3b82f6" },
+            draggable: false,
+            selected: false,
+        },
+        {
+            id: "group-node_tool",
+            type: "group",
+            position: { x: toolGroupX, y: 450 },
+            style: toolsStyle,
+            data: { label: "Tools", color: "#64748b" },
+            draggable: false,
+            selected: false,
+        },
+        {
+            id: "group-llm_tool",
+            type: "group",
+            // Align X with the other groups
+            position: { x: 350, y: 750 },
+            style: intelligenceStyle,
+            data: { label: "Intelligence Sources", color: "#0e7490" },
+            draggable: false,
+            selected: false,
+        },
+    ];
+
+    // --- End Node (Dynamic Position) ---
+    const endNodeX = agentGroupX + agentsStyle.width + 50;
+    const endNode: LineageNode = {
+        id: "end-1",
+        type: "end",
+        position: { x: endNodeX, y: 180 },
+        data: {
+            label: "Workflow End",
+            status: "success",
+            description:
+                "Successful completion of the flight booking workflow.",
+        },
+    };
+
+    const nodes = [
+        ...groups,
+        startNode,
+        ...agents,
+        ...tools,
+        ...intelligenceNodes,
+        endNode,
+    ]; // 2. Edges
     const edges: LineageEdge[] = [
         // Start -> Planner
         {
@@ -778,5 +848,5 @@ Proceeding to finalize the booking for **DL114** and notifying the user via Emai
         },
     ];
 
-    return { nodes: finalNodes, edges };
+    return { nodes, edges };
 }
