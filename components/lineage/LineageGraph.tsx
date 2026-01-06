@@ -14,6 +14,8 @@ import ReactFlow, {
     useReactFlow,
 } from "reactflow";
 import "reactflow/dist/style.css";
+import { ScanEye } from "lucide-react";
+import clsx from "clsx";
 import { transformGraph } from "@/utils/transform-graph";
 import { flightWorkflowGraph } from "@/data/flight-workflow";
 import { marketIntelligenceWorkflow } from "@/data/market-intelligence-workflow";
@@ -207,26 +209,70 @@ const LineageGraphContent = () => {
         }
     }, [currentStepIndex, isSimulationMode, edges, simulationSteps]);
 
-    // Dynamic Styling based on Step
-    const visibleNodes = useMemo(() => {
-        if (!isSimulationMode) return nodes;
-        if (simulationSteps.length === 0) return nodes;
+    const [isInspectorMode, setIsInspectorMode] = useState(false);
+    const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
 
-        const safeIndex = Math.min(
-            currentStepIndex,
-            simulationSteps.length - 1
-        );
-        const activeStepId = simulationSteps[safeIndex].id;
+    const onNodeMouseEnter = useCallback(
+        (_: React.MouseEvent, node: LineageNode) => {
+            if (!isInspectorMode || node.type === "group") return;
+            setHoveredNodeId(node.id);
+        },
+        [isInspectorMode]
+    );
+
+    const onNodeMouseLeave = useCallback(() => {
+        setHoveredNodeId(null);
+    }, []);
+
+    // Dynamic Styling based on Step OR Hover
+    const visibleNodes = useMemo(() => {
+        // 1. Simulation Mode Parsing
+        let simulationActiveNodeId: string | null = null;
+        if (isSimulationMode && simulationSteps.length > 0) {
+            const safeIndex = Math.min(
+                currentStepIndex,
+                simulationSteps.length - 1
+            );
+            simulationActiveNodeId = simulationSteps[safeIndex].id;
+        }
+
+        if (!isSimulationMode && !hoveredNodeId) return nodes;
+
+        // Helper to check connections
+        const getConnectedNodeIds = (nodeId: string) => {
+            const connectedIds = new Set<string>();
+            edges.forEach((e) => {
+                if (e.source === nodeId) connectedIds.add(e.target);
+                if (e.target === nodeId) connectedIds.add(e.source);
+            });
+            return connectedIds;
+        };
+
+        const connectedToHover = hoveredNodeId
+            ? getConnectedNodeIds(hoveredNodeId)
+            : new Set();
 
         return nodes.map((node) => {
-            const isActive = node.id === activeStepId;
-            const isDimmed = !isActive;
+            // Priority: Hover > Simulation
+            let isDimmed = false;
+            let isActive = false;
+
+            if (hoveredNodeId) {
+                // Hover Mode: Highlight Self + Neighbors
+                const isNeighbor = connectedToHover.has(node.id);
+                isActive = node.id === hoveredNodeId || isNeighbor;
+                isDimmed = !isActive;
+            } else if (simulationActiveNodeId) {
+                // Simulation Mode
+                isActive = node.id === simulationActiveNodeId;
+                isDimmed = !isActive;
+            }
 
             return {
                 ...node,
                 style: {
                     ...node.style,
-                    opacity: isDimmed ? 0.3 : 1,
+                    opacity: isDimmed ? 0.25 : 1,
                     filter: isDimmed ? "grayscale(100%)" : "none",
                     border: isActive
                         ? "2px solid #3b82f6"
@@ -234,47 +280,111 @@ const LineageGraphContent = () => {
                     boxShadow: isActive
                         ? "0 0 20px rgba(59, 130, 246, 0.5)"
                         : "none",
-                    transition: "all 0.5s ease-in-out",
+                    transition: "all 0.3s ease-in-out",
                     zIndex: isActive ? 10 : 1,
                 },
             };
         });
-    }, [nodes, currentStepIndex, isSimulationMode, simulationSteps]);
+    }, [
+        nodes,
+        edges,
+        currentStepIndex,
+        isSimulationMode,
+        simulationSteps,
+        hoveredNodeId,
+    ]);
 
     const visibleEdges = useMemo(() => {
-        if (!isSimulationMode) return edges;
-        if (simulationSteps.length === 0) return edges;
-
-        // Highlight logic
-        let activeEdgeId: string | undefined;
-
-        if (currentStepIndex > 0) {
+        // 1. Simulation Active Edge
+        let simulationActiveEdgeId: string | undefined;
+        if (
+            isSimulationMode &&
+            simulationSteps.length > 0 &&
+            currentStepIndex > 0
+        ) {
             const prevStepId = simulationSteps[currentStepIndex - 1].id;
             const currentStepId = simulationSteps[currentStepIndex].id;
-
             const specificEdge = edges.find(
                 (e) => e.source === prevStepId && e.target === currentStepId
             );
-
-            if (specificEdge) activeEdgeId = specificEdge.id;
+            if (specificEdge) simulationActiveEdgeId = specificEdge.id;
         }
 
         return edges.map((edge) => {
-            const isActive = edge.id === activeEdgeId;
-            const isDimmed = !isActive;
+            // Determine if this is a "Shared Brain" edge (connected to LLM)
+            const sourceNode = nodes.find((n) => n.id === edge.source);
+            const targetNode = nodes.find((n) => n.id === edge.target);
+            const isSharedBrainEdge =
+                sourceNode?.type === "llm" || targetNode?.type === "llm";
+
+            let style = { ...edge.style };
+            let animated = edge.animated;
+            let stroke = style.stroke || "#cbd5e1";
+            let opacity = 1;
+            let width = 1;
+
+            // Base Style (Standard)
+            opacity = 1;
+            // Removed de-emphasis for shared brain edges as per user request
+            // if (isSharedBrainEdge) { ... }
+
+            // Interactive States
+            if (hoveredNodeId) {
+                // Hover Logic
+                const isConnectedToHover =
+                    edge.source === hoveredNodeId ||
+                    edge.target === hoveredNodeId;
+
+                if (isConnectedToHover) {
+                    // Highlight Active Path (even for Brain edges)
+                    opacity = 1;
+                    stroke = "#3b82f6"; // Blue-500
+                    width = 2.5;
+                    animated = true;
+                    style.strokeDasharray = "none"; // Reset dash
+                } else {
+                    // Dim unrelated
+                    opacity = 0.05;
+                }
+            } else if (isSimulationMode) {
+                // Simulation Logic
+                const isSimActive = edge.id === simulationActiveEdgeId;
+                if (isSimActive) {
+                    opacity = 1;
+                    stroke = "#3b82f6";
+                    width = 3;
+                    animated = true;
+                } else {
+                    opacity = isSharedBrainEdge ? 0.1 : 0.2;
+                }
+            }
 
             return {
                 ...edge,
-                animated: isActive,
+                animated: animated,
                 style: {
-                    ...edge.style,
-                    stroke: isActive ? "#3b82f6" : "#cbd5e1",
-                    opacity: isDimmed ? 0.2 : 1,
-                    strokeWidth: isActive ? 3 : 1,
+                    ...style,
+                    stroke,
+                    opacity,
+                    strokeWidth: width,
+                    transition: "all 0.3s ease-in-out",
                 },
+                zIndex:
+                    hoveredNodeId &&
+                    (edge.source === hoveredNodeId ||
+                        edge.target === hoveredNodeId)
+                        ? 50
+                        : 0,
             };
         });
-    }, [edges, currentStepIndex, isSimulationMode, simulationSteps]);
+    }, [
+        nodes,
+        edges,
+        currentStepIndex,
+        isSimulationMode,
+        simulationSteps,
+        hoveredNodeId,
+    ]);
 
     const onNodeClick: NodeMouseHandler = useCallback((event, node) => {
         if (node.type !== "group") {
@@ -325,6 +435,8 @@ const LineageGraphContent = () => {
                 onNodeClick={onNodeClick}
                 onEdgeClick={onEdgeClick}
                 onPaneClick={onPaneClick}
+                onNodeMouseEnter={onNodeMouseEnter}
+                onNodeMouseLeave={onNodeMouseLeave}
                 nodeTypes={nodeTypes}
                 edgeTypes={edgeTypes}
                 connectionMode={ConnectionMode.Loose}
@@ -349,14 +461,40 @@ const LineageGraphContent = () => {
             </ReactFlow>
 
             {/* Simulation Trigger Button */}
+            {/* Simulation & Inspector Triggers */}
             {!isSimulationMode && (
-                <button
-                    onClick={() => setIsSimulationMode(true)}
-                    className="absolute top-4 right-4 z-50 bg-white hover:bg-slate-50 text-slate-700 font-semibold py-2 px-4 rounded-lg shadow-md border border-slate-200 flex items-center gap-2 transition-all hover:scale-105 active:scale-95"
-                >
-                    <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-                    Simulation Mode
-                </button>
+                <div className="absolute top-4 right-4 z-50 flex gap-2">
+                    <button
+                        onClick={() => {
+                            const newMode = !isInspectorMode;
+                            setIsInspectorMode(newMode);
+                            if (!newMode) setHoveredNodeId(null);
+                        }}
+                        className={clsx(
+                            "bg-white hover:bg-slate-50 text-slate-700 font-semibold py-2 px-4 rounded-lg shadow-md border border-slate-200 flex items-center gap-2 transition-all active:scale-95",
+                            isInspectorMode &&
+                                "ring-2 ring-blue-500 ring-offset-1 text-blue-700 bg-blue-50"
+                        )}
+                    >
+                        <ScanEye
+                            className={clsx(
+                                "w-4 h-4",
+                                isInspectorMode && "text-blue-600"
+                            )}
+                        />
+                        {isInspectorMode
+                            ? "Inspector Active"
+                            : "Enable Inspector"}
+                    </button>
+
+                    <button
+                        onClick={() => setIsSimulationMode(true)}
+                        className="bg-white hover:bg-slate-50 text-slate-700 font-semibold py-2 px-4 rounded-lg shadow-md border border-slate-200 flex items-center gap-2 transition-all hover:scale-105 active:scale-95"
+                    >
+                        <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                        Simulation Mode
+                    </button>
+                </div>
             )}
 
             {/* Playback Controls */}
