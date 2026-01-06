@@ -23,7 +23,9 @@ export interface BaseNodeData {
         title: string;
         withNode?: string;
         input: any;
+        inputSummary?: string;
         output: any;
+        outputSummary?: string;
     }>;
     inputs?: Record<string, any>;
     outputs?: Record<string, any>;

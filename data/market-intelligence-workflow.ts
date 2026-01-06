@@ -37,11 +37,15 @@ const supervisorNode: LineageNode = {
                     context: "Quantum Processor Facility, Southeast Asia",
                     priority: "HIGH",
                 },
+                inputSummary:
+                    "Directive: specific data collection for TechGlobal's new facility in SE Asia.",
                 output: {
                     status: "DELEGATED",
                     assigned_to: "agent-ingestion",
                     tracking_id: "job-8821",
                 },
+                outputSummary:
+                    "Task accepted. Job #8821 initiated by Ingestion Agent.",
             },
             {
                 title: "Delegate: Enrich Data",
@@ -110,6 +114,8 @@ const ingestionAgent: LineageNode = {
                     tickers: ["TGLB (TechGlobal)"],
                     region: "APAC",
                 },
+                inputSummary:
+                    "Querying live market volatility index for TechGlobal (TGLB) in APAC region.",
                 output: {
                     volatility_index: "MEDIUM-HIGH",
                     recent_filings: [
@@ -120,6 +126,8 @@ const ingestionAgent: LineageNode = {
                         },
                     ],
                 },
+                outputSummary:
+                    "Result: MEDIUM-HIGH volatility. Recent 8-K filing indicates supply chain adjustments in Vietnam.",
             },
             {
                 title: "Tool Call: News Feed MCP",
@@ -206,12 +214,16 @@ const analysisAgent: LineageNode = {
                     context: "Recent news indicates rising tensions...",
                     task: "Identify correlation between facility location and regional stability.",
                 },
+                inputSummary:
+                    "Analyzing correlation between new facility location and reported regional instability events.",
                 output: {
                     finding: "Correlation Found",
                     confidence: "High",
                     reasoning:
                         "Facility is located in a zone with increasing maritime disputes. Supply routes traverse contested waters.",
                 },
+                outputSummary:
+                    "ALERT: High confidence correlation found. Facility is in a disputed maritime zone with threatened supply routes.",
             },
         ],
     },
@@ -240,12 +252,16 @@ const riskAgent: LineageNode = {
                     ],
                     weighting_model: "corporate-standard-v4",
                 },
+                inputSummary:
+                    "Calculating weighted risk score. Key factors: Supply Chain (9/10) and Geopolitics (7/10).",
                 output: {
                     final_score: 8.2,
                     risk_tier: "CRITICAL",
                     recommendation:
                         "Establish redundant logistics immediately.",
                 },
+                outputSummary:
+                    "CRITICAL RISK DETECTED (Score: 8.2/10). Recommendation: Establish redundant logistics immediately.",
             },
         ],
     },
@@ -470,7 +486,7 @@ const llmGpt: LineageNode = {
     type: "llm",
     parentId: "group-intelligence",
     extent: "parent",
-    position: { x: 400, y: 50 },
+    position: { x: 50, y: 50 },
     data: {
         label: "GPT-4 Turbo",
         model: "gpt-4-turbo",
@@ -513,7 +529,7 @@ const llmClaude: LineageNode = {
     type: "llm",
     parentId: "group-intelligence",
     extent: "parent",
-    position: { x: 800, y: 50 },
+    position: { x: 450, y: 50 },
     data: {
         label: "Claude 3 Opus",
         model: "claude-3-opus",
@@ -563,7 +579,7 @@ const orchestratorGroup: LineageNode = {
 const agentGroup: LineageNode = {
     id: "group-agents",
     type: "group",
-    position: { x: 600, y: 350 }, // Shifted down
+    position: { x: 600, y: 500 }, // Shifted down for more space
     style: { width: 1600, height: 250 },
     data: { label: "Agents", color: "#3b82f6" },
 };
@@ -571,7 +587,7 @@ const agentGroup: LineageNode = {
 const toolGroup: LineageNode = {
     id: "group-tools",
     type: "group",
-    position: { x: 600, y: 700 }, // Shifted down
+    position: { x: 600, y: 1000 }, // Shifted down for more space
     style: { width: 1600, height: 350 },
     data: { label: "Tools & Data Stores", color: "#64748b" },
 };
@@ -579,7 +595,7 @@ const toolGroup: LineageNode = {
 const intelligenceGroup: LineageNode = {
     id: "group-intelligence",
     type: "group",
-    position: { x: 600, y: 1100 }, // Shifted down
+    position: { x: 600, y: 1600 }, // Shifted down for more space
     style: { width: 1600, height: 200 },
     data: { label: "Intelligence Sources", color: "#0e7490" },
 };

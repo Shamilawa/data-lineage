@@ -308,7 +308,14 @@ const NodeContent = ({ node }: { node: LineageNode }) => {
 const NodeInteractionAccordion = ({
     interactions,
 }: {
-    interactions: { title: string; input: any; output: any }[];
+    interactions: {
+        title: string;
+        input: any;
+        inputSummary?: string;
+        output: any;
+        outputSummary?: string;
+        withNode?: string;
+    }[];
 }) => {
     const [openIndex, setOpenIndex] = useState<number | null>(0);
 
@@ -354,6 +361,11 @@ const NodeInteractionAccordion = ({
                                         <ArrowRight className="w-3 h-3" />
                                         Input Payload
                                     </div>
+                                    {interaction.inputSummary && (
+                                        <div className="mb-2 p-2 bg-blue-50/50 border border-blue-100 rounded text-xs text-slate-700 leading-relaxed">
+                                            {interaction.inputSummary}
+                                        </div>
+                                    )}
                                     <div className="bg-white border border-slate-200 rounded p-2 overflow-x-auto">
                                         <pre className="text-[11px] text-slate-600 font-mono leading-relaxed">
                                             {formatJson(interaction.input)}
@@ -365,6 +377,11 @@ const NodeInteractionAccordion = ({
                                         <ArrowRight className="w-3 h-3 rotate-180" />
                                         Output Response
                                     </div>
+                                    {interaction.outputSummary && (
+                                        <div className="mb-2 p-2 bg-emerald-50/50 border border-emerald-100 rounded text-xs text-slate-700 leading-relaxed whitespace-pre-wrap">
+                                            {interaction.outputSummary}
+                                        </div>
+                                    )}
                                     <div className="bg-white border border-slate-200 rounded p-2 overflow-x-auto">
                                         <pre className="text-[11px] text-slate-600 font-mono leading-relaxed">
                                             {formatJson(interaction.output)}

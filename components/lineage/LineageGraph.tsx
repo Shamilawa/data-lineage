@@ -47,21 +47,8 @@ const edgeTypes = {
     sequence: SequenceEdge,
 };
 
-// Define the linear sequence for the demo
-const DEMO_STEPS = [
-    { id: "start-node", label: "Start" },
-    { id: "agent-planner", label: "Planner (In)" },
-    { id: "llm-shared", label: "Brain (Intent)" },
-    { id: "agent-planner", label: "Planner (Action)" },
-    { id: "tool-search", label: "Search Tool" },
-    { id: "agent-planner", label: "Planner (Res)" },
-    { id: "agent-booking", label: "Booking (In)" },
-    { id: "llm-shared", label: "Brain (Policy)" },
-    { id: "agent-booking", label: "Booking (Dec)" },
-    { id: "tool-email", label: "Email Tool" },
-    { id: "agent-booking", label: "Booking (Out)" },
-    { id: "end-node", label: "End" },
-];
+// Define the linear sequence for the demo (Dynamic now)
+// const DEMO_STEPS = ... (removed)
 
 const LineageGraphContent = () => {
     const reactFlowInstance = useReactFlow();
@@ -101,10 +88,56 @@ const LineageGraphContent = () => {
     const [isPlaying, setIsPlaying] = useState(false);
     const [isSimulationMode, setIsSimulationMode] = useState(false);
 
+    // Dynamic Simulation Steps Calculation
+    const simulationSteps = useMemo(() => {
+        const steps: { id: string; label: string }[] = [];
+
+        // 1. Find Start Node
+        const startNode = nodes.find((n) => n.type === "start");
+        if (startNode) {
+            steps.push({
+                id: startNode.id,
+                label: startNode.data.label || "Start",
+            });
+        }
+
+        // 2. Sort edges by stepNumber
+        const sortedEdges = [...edges]
+            .filter((e) => typeof e.data?.stepNumber === "number")
+            .sort(
+                (a, b) => (a.data.stepNumber || 0) - (b.data.stepNumber || 0)
+            );
+
+        // 3. Add target nodes of the sequence
+        sortedEdges.forEach((edge) => {
+            const targetNode = nodes.find((n) => n.id === edge.target);
+            if (targetNode) {
+                // Optional: Add custom label logic here if needed (e.g. "Planner (In)")
+                // For now, use the node's main label
+                steps.push({
+                    id: targetNode.id,
+                    label: targetNode.data.label || targetNode.id,
+                });
+            }
+        });
+
+        // Ensure we have unique steps if the start node is also targeted?
+        // No, repetition is good for flow.
+
+        return steps;
+    }, [nodes, edges]);
+
     // Auto-focus logic
     useEffect(() => {
         if (!isSimulationMode) return;
-        const activeStepId = DEMO_STEPS[currentStepIndex].id;
+        if (simulationSteps.length === 0) return;
+
+        // Safety check for index
+        const safeIndex = Math.min(
+            currentStepIndex,
+            simulationSteps.length - 1
+        );
+        const activeStepId = simulationSteps[safeIndex].id;
         const node = nodes.find((n) => n.id === activeStepId);
 
         if (node) {
@@ -116,7 +149,13 @@ const LineageGraphContent = () => {
                 maxZoom: 1.2,
             });
         }
-    }, [currentStepIndex, nodes, reactFlowInstance, isSimulationMode]);
+    }, [
+        currentStepIndex,
+        nodes,
+        reactFlowInstance,
+        isSimulationMode,
+        simulationSteps,
+    ]);
 
     // Playback Interval
     useEffect(() => {
@@ -124,7 +163,7 @@ const LineageGraphContent = () => {
         if (isPlaying && isSimulationMode) {
             interval = setInterval(() => {
                 setCurrentStepIndex((prev) => {
-                    if (prev >= DEMO_STEPS.length - 1) {
+                    if (prev >= simulationSteps.length - 1) {
                         setIsPlaying(false);
                         return prev;
                     }
@@ -133,42 +172,54 @@ const LineageGraphContent = () => {
             }, 2500); // 2.5s per step
         }
         return () => clearInterval(interval);
-    }, [isPlaying, isSimulationMode]);
+    }, [isPlaying, isSimulationMode, simulationSteps]);
 
     // Auto-Inspect Data Flow (Edge Inspector)
     useEffect(() => {
         if (!isSimulationMode) return;
+        if (simulationSteps.length === 0) return;
 
         if (currentStepIndex > 0) {
-            const prevStepId = DEMO_STEPS[currentStepIndex - 1].id;
-            const currentStepId = DEMO_STEPS[currentStepIndex].id;
+            // In the dynamic model, Step N corresponds to the edge leading TO Step N
+            // BUT, our steps array is [Start, Target1, Target2...]
+            // So Index 1 is Target1. The edge is Start -> Target1.
+            // Let's try to find the edge that connects Step[i-1] to Step[i]
+
+            const prevStepId = simulationSteps[currentStepIndex - 1].id;
+            const currentStepId = simulationSteps[currentStepIndex].id;
+
+            // Find edge connecting them
+            // Note: In complex graphs, there might be multiple.
+            // We should ideally use the edge's stepNumber to disambiguate, but we don't have it easily here maped 1:1.
+            // Actually, constructing simulationSteps from edges would have given us the Edge ID too!
+            // Update: Let's assume the first match is correct for now, or refine `simulationSteps` to include `edgeId`.
 
             const activeEdge = edges.find(
                 (e) => e.source === prevStepId && e.target === currentStepId
             );
 
             if (activeEdge) {
-                // Wrap in timeout to avoid synchronous state update warning during render cycle
                 const timer = setTimeout(() => {
                     setSelectedItem(activeEdge as LineageEdge);
                 }, 0);
                 return () => clearTimeout(timer);
             }
-        } else {
-            // Optional: Select start node on step 0?
-            // setSelectedItem(nodes.find(n => n.id === DEMO_STEPS[0].id) as LineageNode);
         }
-    }, [currentStepIndex, isSimulationMode, edges]);
+    }, [currentStepIndex, isSimulationMode, edges, simulationSteps]);
 
     // Dynamic Styling based on Step
     const visibleNodes = useMemo(() => {
         if (!isSimulationMode) return nodes;
+        if (simulationSteps.length === 0) return nodes;
 
-        const activeStepId = DEMO_STEPS[currentStepIndex].id;
+        const safeIndex = Math.min(
+            currentStepIndex,
+            simulationSteps.length - 1
+        );
+        const activeStepId = simulationSteps[safeIndex].id;
 
         return nodes.map((node) => {
             const isActive = node.id === activeStepId;
-            // Focus mode: Dim everything except the active node
             const isDimmed = !isActive;
 
             return {
@@ -179,7 +230,7 @@ const LineageGraphContent = () => {
                     filter: isDimmed ? "grayscale(100%)" : "none",
                     border: isActive
                         ? "2px solid #3b82f6"
-                        : "1px solid #cbd5e1", // Default border
+                        : "1px solid #cbd5e1",
                     boxShadow: isActive
                         ? "0 0 20px rgba(59, 130, 246, 0.5)"
                         : "none",
@@ -188,20 +239,19 @@ const LineageGraphContent = () => {
                 },
             };
         });
-    }, [nodes, currentStepIndex, isSimulationMode]);
+    }, [nodes, currentStepIndex, isSimulationMode, simulationSteps]);
 
     const visibleEdges = useMemo(() => {
         if (!isSimulationMode) return edges;
+        if (simulationSteps.length === 0) return edges;
 
-        // Highlight logic: Find the edge connecting Step[current-1] -> Step[current]
+        // Highlight logic
         let activeEdgeId: string | undefined;
 
         if (currentStepIndex > 0) {
-            const prevStepId = DEMO_STEPS[currentStepIndex - 1].id;
-            const currentStepId = DEMO_STEPS[currentStepIndex].id;
+            const prevStepId = simulationSteps[currentStepIndex - 1].id;
+            const currentStepId = simulationSteps[currentStepIndex].id;
 
-            // Find the active edge matching this specific transition
-            // Need to handle bi-directional checks if edges aren't strictly one-way in ID
             const specificEdge = edges.find(
                 (e) => e.source === prevStepId && e.target === currentStepId
             );
@@ -224,10 +274,9 @@ const LineageGraphContent = () => {
                 },
             };
         });
-    }, [edges, currentStepIndex, isSimulationMode]);
+    }, [edges, currentStepIndex, isSimulationMode, simulationSteps]);
 
     const onNodeClick: NodeMouseHandler = useCallback((event, node) => {
-        // Don't inspect group nodes
         if (node.type !== "group") {
             setSelectedItem(node as LineageNode);
         } else {
@@ -256,7 +305,7 @@ const LineageGraphContent = () => {
                         setActiveWorkflowKey(
                             e.target.value as "flight" | "market"
                         );
-                        setIsSimulationMode(false); // Reset sim when switching
+                        setIsSimulationMode(false);
                         setSelectedItem(null);
                     }}
                     className="text-sm font-medium text-slate-700 bg-transparent border-none outline-none cursor-pointer hover:bg-slate-50 rounded px-1 py-0.5"
@@ -287,7 +336,7 @@ const LineageGraphContent = () => {
                 <MiniMap
                     className="bg-white border-slate-200 shadow-sm"
                     nodeColor={(n) => {
-                        const stepIndex = DEMO_STEPS.findIndex(
+                        const stepIndex = simulationSteps.findIndex(
                             (s) => s.id === n.id
                         );
                         if (stepIndex !== -1 && stepIndex > currentStepIndex)
@@ -313,7 +362,7 @@ const LineageGraphContent = () => {
             {/* Playback Controls */}
             {isSimulationMode && (
                 <PlaybackControls
-                    steps={DEMO_STEPS}
+                    steps={simulationSteps}
                     currentStepIndex={currentStepIndex}
                     isPlaying={isPlaying}
                     onPlayPause={() => setIsPlaying(!isPlaying)}
@@ -322,7 +371,7 @@ const LineageGraphContent = () => {
                     }
                     onNext={() =>
                         setCurrentStepIndex((p) =>
-                            Math.min(DEMO_STEPS.length - 1, p + 1)
+                            Math.min(simulationSteps.length - 1, p + 1)
                         )
                     }
                     onStepClick={setCurrentStepIndex}
