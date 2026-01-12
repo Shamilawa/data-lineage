@@ -73,8 +73,10 @@ export function transformGraph(rawGraph: WorkflowDefinition): {
     });
 
     // Special handling for "Shared Intelligence" group width if present
-    // If we have multiple main groups (Agents, Tools), and a Shared Intelligence group,
-    // we often want the Intelligence group to span the width of the others.
+    // REMOVED: Previous logic forced Intelligence Sources to span the full width of Agents/Tools.
+    // User requested that valid groups size to fit their specific content only.
+
+    /* 
     const agentGroup = groups.find((g) => g.data.label === "Agents");
     const toolGroup = groups.find((g) => g.data.label === "Tools");
     const intelligenceGroup = groups.find(
@@ -82,31 +84,9 @@ export function transformGraph(rawGraph: WorkflowDefinition): {
     );
 
     if (agentGroup && toolGroup && intelligenceGroup) {
-        const maxW = Math.max(
-            Number(agentGroup.style?.width || 0),
-            Number(toolGroup.style?.width || 0)
-        );
-
-        if (maxW > Number(intelligenceGroup.style?.width || 0)) {
-            intelligenceGroup.style = {
-                ...intelligenceGroup.style,
-                width: maxW,
-            };
-
-            // Also execute logic to center the "Brain" node if it exists in this group
-            const brainNodes = nodes.filter(
-                (n) => n.parentId === intelligenceGroup.id
-            );
-            if (brainNodes.length === 1) {
-                const brainNode = brainNodes[0];
-                const centeredX = (maxW - 250) / 2; // 250 is approx node width
-                brainNode.position = {
-                    ...brainNode.position,
-                    x: Math.max(50, centeredX),
-                };
-            }
-        }
-    }
+         // ... removal of width override ...
+    } 
+    */
 
     return { nodes, edges };
 }
