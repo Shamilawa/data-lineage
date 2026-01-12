@@ -100,7 +100,12 @@ const InspectorPanel = ({
 
             {/* Content Area */}
             <div className="flex-1 overflow-y-auto">
-                {isNode && <NodeContent node={selectedItem as LineageNode} />}
+                {isNode && (
+                    <NodeContent
+                        key={selectedItem.id}
+                        node={selectedItem as LineageNode}
+                    />
+                )}
                 {isEdge && (
                     <EdgeInspectorPanel
                         edge={selectedItem as LineageEdge}
@@ -219,6 +224,9 @@ const NodeContent = ({ node }: { node: LineageNode }) => {
                                         </div>
                                     ) : (
                                         <AgentReasoningSimulation
+                                            aiExplanation={
+                                                (data as any).aiExplanation
+                                            }
                                             reasoning={
                                                 (data as any).agentReasoning
                                             }

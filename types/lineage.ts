@@ -14,6 +14,7 @@ export interface BaseNodeData {
     label: string;
     description?: string;
     agentReasoning?: string;
+    aiExplanation?: string;
     xaiTimeline?: Array<{
         title: string;
         type: "input" | "output" | "tool" | "llm" | "processing";

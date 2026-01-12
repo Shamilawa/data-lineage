@@ -13,30 +13,32 @@ import { useEffect, useState } from "react";
 import {
     BrainCircuit,
     CheckCircle2,
-    ChevronRight,
     Database,
     Layers,
-    Play,
     RefreshCcw,
     Activity,
     ArrowRight,
+    Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const AgentReasoningSimulation = ({
+    aiExplanation,
     reasoning,
     inputs,
     outputs,
     interactions,
     onReset,
 }: {
+    aiExplanation?: string;
     reasoning: string;
     inputs: any;
     outputs: any;
     interactions: any[];
     onReset: () => void;
 }) => {
-    const [step, setStep] = useState(0); // 0: Start, 1: Context, 2: Reasoning, 3: Actions, 4: Output
+    // 0: Start, 1: Context, 2: AI Explainer, 3: Technical Reasoning, 4: Actions, 5: Output
+    const [step, setStep] = useState(0);
     const [displayedText, setDisplayedText] = useState("");
 
     // Simulate the sequence
@@ -45,28 +47,30 @@ const AgentReasoningSimulation = ({
         if (step === 0) {
             timeout = setTimeout(() => setStep(1), 500);
         } else if (step === 1) {
-            timeout = setTimeout(() => setStep(2), 1500); // Show context for 1.5s then start reasoning
+            timeout = setTimeout(() => setStep(2), 1500); // Input -> AI Explainer
         } else if (step === 2) {
-            // Typewriter effect handling is below, after it finishes it sets step 3
+            // Show AI Explainer for a bit, then move to Technical Reasoning
+            timeout = setTimeout(() => setStep(3), 3000);
         } else if (step === 3) {
-            timeout = setTimeout(() => setStep(4), 2000); // Show actions for 2s then show output
+            // Typewriter effect handles transition to step 4
+        } else if (step === 4) {
+            timeout = setTimeout(() => setStep(5), 2000); // Actions -> Output
         }
         return () => clearTimeout(timeout);
     }, [step]);
 
-    // Typewriter effect for Reasoning (Step 2)
+    // Typewriter effect for Reasoning (Step 3)
     useEffect(() => {
-        if (step === 2) {
+        if (step === 3) {
             let i = 0;
-            const speed = 10; // ms per char
+            const speed = 5; // Faster typing
             const type = () => {
                 if (i < reasoning.length) {
                     setDisplayedText(reasoning.slice(0, i + 1));
                     i++;
                     setTimeout(type, speed);
                 } else {
-                    // Finished typing, wait a bit then move to next step
-                    setTimeout(() => setStep(3), 1000);
+                    setTimeout(() => setStep(4), 1000);
                 }
             };
             type();
@@ -80,12 +84,12 @@ const AgentReasoningSimulation = ({
                     <div
                         className={cn(
                             "p-1.5 rounded-md transition-colors",
-                            step >= 4
+                            step >= 5
                                 ? "bg-green-100 text-green-600"
                                 : "bg-blue-100 text-blue-600"
                         )}
                     >
-                        {step >= 4 ? (
+                        {step >= 5 ? (
                             <CheckCircle2 className="w-4 h-4" />
                         ) : (
                             <Activity className="w-4 h-4 animate-pulse" />
@@ -93,9 +97,10 @@ const AgentReasoningSimulation = ({
                     </div>
                     <span className="text-xs font-bold uppercase text-slate-500 tracking-wider">
                         {step === 1 && "Analyzing Input..."}
-                        {step === 2 && "Formulating Plan..."}
-                        {step === 3 && "Executing Actions..."}
-                        {step === 4 && "Process Complete"}
+                        {step === 2 && "Synthesizing Explanation..."}
+                        {step === 3 && "Internal Processing..."}
+                        {step === 4 && "Executing Actions..."}
+                        {step === 5 && "Process Complete"}
                     </span>
                 </div>
                 <button
@@ -135,8 +140,25 @@ const AgentReasoningSimulation = ({
                     </div>
                 </div>
 
-                {/* Step 2: Reasoning (The Core) */}
-                {step >= 2 && (
+                {/* Step 2: AI Generated Explanation (User Friendly) */}
+                {step >= 2 && aiExplanation && (
+                    <div className="transition-all duration-500 animate-in fade-in slide-in-from-left-2">
+                        <div className="flex items-center gap-2 mb-1">
+                            <Sparkles className="w-3 h-3 text-purple-500" />
+                            <span className="text-[10px] font-bold uppercase text-purple-500">
+                                AI Explanation
+                            </span>
+                        </div>
+                        <div className="bg-purple-50 border border-purple-100 rounded-lg p-3 text-xs text-purple-900 leading-relaxed font-medium relative overflow-hidden">
+                            {/* Shimmer effect */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
+                            {aiExplanation}
+                        </div>
+                    </div>
+                )}
+
+                {/* Step 3: Reasoning (The Core) */}
+                {step >= 3 && (
                     <div className="transition-all duration-500 animate-in fade-in">
                         <div className="flex items-center gap-2 mb-1">
                             <BrainCircuit className="w-3 h-3 text-indigo-500" />
@@ -146,15 +168,15 @@ const AgentReasoningSimulation = ({
                         </div>
                         <div className="bg-indigo-50/50 border border-indigo-100 rounded-lg p-3 text-xs text-indigo-900 leading-relaxed whitespace-pre-wrap font-medium">
                             {displayedText}
-                            {step === 2 && (
+                            {step === 3 && (
                                 <span className="inline-block w-1.5 h-3 ml-0.5 bg-indigo-400 animate-pulse" />
                             )}
                         </div>
                     </div>
                 )}
 
-                {/* Step 3: Actions */}
-                {step >= 3 && interactions && interactions.length > 0 && (
+                {/* Step 4: Actions */}
+                {step >= 4 && interactions && interactions.length > 0 && (
                     <div className="transition-all duration-500 animate-in fade-in slide-in-from-left-2">
                         <div className="flex items-center gap-2 mb-1">
                             <Layers className="w-3 h-3 text-amber-500" />
@@ -183,8 +205,8 @@ const AgentReasoningSimulation = ({
                     </div>
                 )}
 
-                {/* Step 4: Output */}
-                {step >= 4 && (
+                {/* Step 5: Output */}
+                {step >= 5 && (
                     <div className="transition-all duration-500 animate-in fade-in slide-in-from-left-2">
                         <div className="flex items-center gap-2 mb-1">
                             <ArrowRight className="w-3 h-3 text-emerald-500" />
