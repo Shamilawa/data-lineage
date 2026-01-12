@@ -121,7 +121,7 @@ const EdgeInspectorPanel = ({
             </div>
 
             {/* Relationship Info */}
-            <div className="pt-4 border-t border-slate-100">
+            <div className="pt-4 border-t border-slate-100 hidden">
                 <div className="flex items-start gap-3 p-3 bg-blue-50/50 rounded-lg border border-blue-100">
                     <div className="p-1.5 bg-blue-100 text-blue-600 rounded-md mt-0.5">
                         <ChevronRight className="w-3.5 h-3.5" />
