@@ -27,6 +27,8 @@ const supervisorNode: LineageNode = {
             "Orchestrates the analysis pipeline, delegating to specialized agents.",
         status: "success",
         agentType: "Orchestrator",
+        agentReasoning:
+            "I have received a high-priority request to assess geopolitical and supply chain risks for TechGlobal Inc. in Southeast Asia. \n\nGiven the complexity, I will break this down into four parallel streams: \n1. **Data Collection**: Tasking the Ingestion Agent to fetch raw market data and news. \n2. **Enrichment**: Tasking the Enrichment Agent to contextualize this data with our internal knowledge base. \n3. **Analysis**: Once enriched, the Intelligence Analyst must identify specific correlations between facility location and regional instability. \n4. **Synthesis**: Finally, I will have the Synthesis Agent compile an executive brief.\n\nExecuting delegation sequence now...",
         interactions: [
             {
                 title: "Delegate: Fetch Data",
@@ -117,6 +119,8 @@ const ingestionAgent: LineageNode = {
         agentType: "Specialist",
         status: "success",
         description: "Fetches raw data.",
+        agentReasoning:
+            "To fulfill the request for 'TechGlobal Inc.' in 'Southeast Asia', I need to query multiple independent sources to ensure zero-shot coverage.\n\n**Plan:**\n1.  **Quantitative Check**: Query the Market Data API for real-time volatility indices on TechGlobal (TGLB).\n2.  **Qualitative Check**: Search the News Feed MCP for recent headlines involving 'Vietnam', 'Thailand', and 'Quantum' to catch emerging local narratives.\n\nAggregating results from both structured and unstructured sources...",
         interactions: [
             {
                 title: "Tool Call: Market Data API",
@@ -176,6 +180,8 @@ const enrichmentAgent: LineageNode = {
         agentType: "Specialist",
         status: "success",
         description: "Cleans & embeds data.",
+        agentReasoning:
+            "Raw data has been received. My goal is to map these disparate data points to our internal risk ontology.\n\n**Process:**\n1.  **Vectorization**: Converting the news headlines into high-dimensional vectors.\n2.  **Retrieval**: Querying the 'geopolitical-risks-2024' namespace in the Vector Store to find historical precedents and similar risk profiles.\n3.  **Contextualization**: Linking the specific 'Vietnam Quantum Hub' news to broader 'Semiconductor Supply Chain' trends.\n\nEmbedding complete. Context retrieved.",
         interactions: [
             {
                 title: "Vector Store: Retrieve Context",
@@ -225,6 +231,8 @@ const analysisAgent: LineageNode = {
         agentType: "Reasoning",
         status: "success",
         description: "Finds patterns.",
+        agentReasoning:
+            "I need to determine if the retrieved news about 'Regional tensions' is materially significant to the 'Quantum Processing Facility'.\n\n**Analysis Logic:**\n-   *Hypothesis*: The new facility is in a contested maritime zone.\n-   *Evidence*: Correlating the facility's coordinates with the 'South China Sea' dispute zones found in the Vector Store.\n-   *Inference*: If supply routes cross these zones, the risk is non-trivial.\n\nAsking GPT-4 Turbo to validate this correlation...",
         interactions: [
             {
                 title: "LLM Reasoning: Pattern Match",
@@ -260,6 +268,8 @@ const riskAgent: LineageNode = {
         agentType: "Reasoning",
         status: "success",
         description: "Assesses risk.",
+        agentReasoning:
+            "All qualitative analysis points to a disruption event. I must now quantify this into a single 'Risk Score' (0-10) for the executive dashboard.\n\n**Scoring Model (Corporate Standard v4):**\n-   **Geopolitical (Weight 0.4)**: Severity 7/10 (Regional tensions).\n-   **Supply Chain (Weight 0.5)**: Severity 9/10 (JIT Semiconductor reliance).\n-   **Regulatory (Weight 0.1)**: Severity 4/10.\n\nCalculating final impact score using Claude 3 Opus...",
         interactions: [
             {
                 title: "LLM Reasoning: Score Calculation",
@@ -298,6 +308,8 @@ const synthesisAgent: LineageNode = {
         agentType: "Writer",
         status: "success",
         description: "Format report.",
+        agentReasoning:
+            "Risk assessment is complete (`CRITICAL - 8.2`). I need to transform these findings into a standardized `EXECUTIVE_BRIEF` format.\n\n**Formatting Rules:**\n-   Title must include the Entity Name and Risk Tier.\n-   Executive Summary must be < 100 words.\n-   Must include the 'Redundant Logistics' recommendation.\n\nPersisting final report to the Analytics Database for audit trail.",
         interactions: [
             {
                 title: "Database: Audit Log",

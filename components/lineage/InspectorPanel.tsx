@@ -4,7 +4,6 @@ import {
     Clock,
     Database,
     BrainCircuit,
-    Activity,
     ChevronDown,
     ChevronRight,
     ArrowRight,
@@ -14,6 +13,7 @@ import { cn } from "@/lib/utils"; // Assuming standard shadcn utils
 import { LineageNode, LineageEdge } from "@/types/lineage";
 
 import EdgeInspectorPanel from "./EdgeInspectorPanel";
+import AgentReasoningSimulation from "./AgentReasoningSimulation";
 
 interface InspectorPanelProps {
     selectedItem: LineageNode | LineageEdge | null;
@@ -196,44 +196,41 @@ const NodeContent = ({ node }: { node: LineageNode }) => {
                                         <button
                                             onClick={() => {
                                                 setIsGenerating(true);
+                                                // Start the simulation flow
                                                 setTimeout(() => {
                                                     setIsGenerating(false);
                                                     setShowTimeline(true);
-                                                }, 1000);
+                                                }, 1500); // Simulated delay
                                             }}
-                                            className="w-full py-2.5 px-4 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center justify-center gap-2 shadow-sm"
+                                            className="w-full py-2.5 px-4 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center justify-center gap-2 shadow-sm group"
                                         >
-                                            <BrainCircuit className="w-4 h-4 text-blue-600" />
+                                            <BrainCircuit className="w-4 h-4 text-slate-400 group-hover:text-blue-600 transition-colors" />
                                             Generate Agent Reasoning
                                         </button>
                                     ) : isGenerating ? (
-                                        <div className="flex flex-col items-center justify-center py-8 space-y-3 bg-slate-50/50 rounded-lg border border-slate-100">
-                                            <div className="w-5 h-5 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
-                                            <p className="text-xs text-slate-500 font-medium">
-                                                Retrieving thought process...
+                                        <div className="flex flex-col items-center justify-center py-8 space-y-3 bg-slate-50/50 rounded-lg border border-slate-100 animate-in fade-in duration-300">
+                                            <div className="relative">
+                                                <div className="w-8 h-8 border-2 border-slate-200 rounded-full" />
+                                                <div className="absolute top-0 left-0 w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                                            </div>
+                                            <p className="text-xs text-slate-500 font-medium animate-pulse">
+                                                Analyzing node context...
                                             </p>
                                         </div>
                                     ) : (
-                                        <div className="animate-in fade-in slide-in-from-bottom-1 duration-300">
-                                            <div className="flex items-center justify-between mb-3">
-                                                <h3 className="font-bold text-xs uppercase text-slate-500 flex items-center gap-2 tracking-wider">
-                                                    <BrainCircuit className="w-3 h-3" />
-                                                    Thinking Process
-                                                </h3>
-                                                <button
-                                                    onClick={() =>
-                                                        setShowTimeline(false)
-                                                    }
-                                                    className="text-xs text-slate-400 hover:text-slate-600"
-                                                >
-                                                    Reset
-                                                </button>
-                                            </div>
-
-                                            <div className="bg-slate-50 border border-slate-100 rounded-lg p-3 text-sm text-slate-700 font-mono leading-relaxed whitespace-pre-wrap shadow-inner">
-                                                {(data as any).agentReasoning}
-                                            </div>
-                                        </div>
+                                        <AgentReasoningSimulation
+                                            reasoning={
+                                                (data as any).agentReasoning
+                                            }
+                                            inputs={data.inputs}
+                                            outputs={data.outputs}
+                                            interactions={
+                                                (data as any).interactions
+                                            }
+                                            onReset={() =>
+                                                setShowTimeline(false)
+                                            }
+                                        />
                                     )}
                                 </div>
                             )}
