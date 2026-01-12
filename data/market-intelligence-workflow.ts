@@ -25,7 +25,7 @@ const supervisorNode: LineageNode = {
         label: "Supervisor Agent",
         description:
             "Orchestrates the analysis pipeline, delegating to specialized agents.",
-        status: "active",
+        status: "success",
         agentType: "Orchestrator",
         interactions: [
             {
@@ -223,7 +223,7 @@ const analysisAgent: LineageNode = {
     data: {
         label: "Intelligence Analyst",
         agentType: "Reasoning",
-        status: "active",
+        status: "success",
         description: "Finds patterns.",
         interactions: [
             {
@@ -258,7 +258,7 @@ const riskAgent: LineageNode = {
     data: {
         label: "Risk Evaluator",
         agentType: "Reasoning",
-        status: "idle",
+        status: "success",
         description: "Assesses risk.",
         interactions: [
             {
@@ -296,7 +296,7 @@ const synthesisAgent: LineageNode = {
     data: {
         label: "Synthesis Agent",
         agentType: "Writer",
-        status: "idle",
+        status: "success",
         description: "Format report.",
         interactions: [
             {
@@ -613,7 +613,7 @@ const toolGroup: LineageNode = {
     type: "group",
     position: { x: 600, y: 1000 }, // Shifted down for more space
     style: { width: 1600, height: 350 },
-    data: { label: "Tools & Data Stores", color: "#64748b" },
+    data: { label: "Tools", color: "#64748b" },
 };
 
 const intelligenceGroup: LineageNode = {
